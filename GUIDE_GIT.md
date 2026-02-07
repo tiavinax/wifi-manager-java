@@ -6,7 +6,7 @@ git pull origin main
 # 2. Travailler
 # ... modifier ArpScanner.java ...
 
-# 3. Ajouter UNIQUEMENT ses fichiers
+# 3. Ajouter UNIQUEMENT ses fichiers (otanzao no tokony atao rehefa i commit modification)
 git add src/main/java/com/wifimanager/detector/ArpScanner.java
 
 # 4. Commit
