@@ -13,25 +13,25 @@ Application de gestion WiFi pour restaurants, cybercafés et hôtels avec :
 
 ## 👥 Équipe (5 personnes)
 
-### Module 1 : Détection (Personne 1)
+### Module 1 : Détection (Tiavina)
 **Fichiers principaux :** `detector/`
 - Détection appareils connectés (ARP scanning)
 - Surveillance DHCP
 - Base de données clients
 
-### Module 2 : Contrôle (Personne 2)
+### Module 2 : Contrôle (Sandria)
 **Fichiers principaux :** `enforcer/`
 - Application quotas temps/données
 - Limitation bande passante
 - Déconnexion automatique
 
-### Module 3 : Analyse (Personne 3)
+### Module 3 : Analyse (Larissa)
 **Fichiers principaux :** `inspector/`
 - Deep Packet Inspection
 - Détection services (YouTube, Netflix)
 - Page captive portal
 
-### Module 4 : Interface (Personne 4-5)
+### Module 4 : Interface (Miangola et Stephanie)
 **Fichiers principaux :** `dashboard/`
 - Dashboard web admin
 - Gestion règles
