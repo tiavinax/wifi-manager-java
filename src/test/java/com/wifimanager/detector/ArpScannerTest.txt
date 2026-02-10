@@ -1,0 +1,107 @@
+package com.wifimanager.detector;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import java.io.File;
+import java.io.FileWriter;
+import java.util.Map;
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Tests unitaires pour ArpScanner
+ */
+public class ArpScannerTest {
+    
+    private ArpScanner arpScanner;
+    
+    @BeforeEach
+    void setUp() {
+        // Utilise l'interface loopback pour les tests
+        arpScanner = new ArpScanner("lo", "127.0.0.0/24");
+    }
+    
+    @Test
+    void testValidMacAddress() {
+        // Test de validation MAC
+        assertTrue(isValidMacAddress("AA:BB:CC:DD:EE:FF"), "MAC avec : doit être valide");
+        assertTrue(isValidMacAddress("aa:bb:cc:dd:ee:ff"), "MAC lowercase doit être valide");
+        assertTrue(isValidMacAddress("AA-BB-CC-DD-EE-FF"), "MAC avec - doit être valide");
+        
+        assertFalse(isValidMacAddress("invalide"), "Chaîne invalide ne doit pas être acceptée");
+        assertFalse(isValidMacAddress("AA:BB:CC:DD:EE"), "MAC trop courte ne doit pas être acceptée");
+        assertFalse(isValidMacAddress("AA:BB:CC:DD:EE:FF:GG"), "MAC trop longue ne doit pas être acceptée");
+        assertFalse(isValidMacAddress("GG:HH:II:JJ:KK:LL"), "MAC avec caractères non hexa ne doit pas être acceptée");
+    }
+    
+    @Test
+    void testValidIpAddress() {
+        // Test de validation IP
+        assertTrue(isValidIpAddress("192.168.1.1"), "IP standard doit être valide");
+        assertTrue(isValidIpAddress("10.0.0.1"), "IP réseau privé doit être valide");
+        assertTrue(isValidIpAddress("255.255.255.255"), "Broadcast doit être valide");
+        assertTrue(isValidIpAddress("0.0.0.0"), "IP zéro doit être valide");
+        
+        assertFalse(isValidIpAddress("256.168.1.1"), "Octet >255 ne doit pas être accepté");
+        assertFalse(isValidIpAddress("192.168.1"), "IP avec 3 octets ne doit pas être acceptée");
+        assertFalse(isValidIpAddress("192.168.1.1.1"), "IP avec 5 octets ne doit pas être acceptée");
+        assertFalse(isValidIpAddress("not-an-ip"), "Chaîne non IP ne doit pas être acceptée");
+        assertFalse(isValidIpAddress("192.168.1.256"), "Dernier octet >255 ne doit pas être accepté");
+    }
+    
+    @Test
+    void testScannerInitialization() {
+        // Test que le scanner est correctement initialisé
+        assertNotNull(arpScanner, "ArpScanner ne doit pas être null");
+        assertEquals("lo", arpScanner.getNetworkInterface(), "Interface doit être 'lo'");
+        assertEquals("127.0.0.0/24", arpScanner.getSubnet(), "Subnet doit être '127.0.0.0/24'");
+    }
+    
+    @Test
+    void testGetSystemArpTableDoesNotCrash() {
+        // Test que la méthode ne crash pas (test d'intégration basique)
+        Map<String, String> result = arpScanner.getSystemArpTable();
+        assertNotNull(result, "getSystemArpTable() doit retourner une Map (même vide)");
+        // La Map peut être vide sur certaines interfaces, c'est OK
+    }
+    
+    @Test
+    void testPingArpMethodExists() {
+        // Test que la méthode pingArp existe et peut être appelée
+        // Sur loopback, ça peut retourner false, mais ne doit pas crash
+        try {
+            boolean result = arpScanner.pingArp("127.0.0.1");
+            // Juste vérifier que l'appel ne crash pas
+            // result peut être true ou false selon l'environnement
+        } catch (Exception e) {
+            fail("pingArp() ne doit pas lever d'exception pour 127.0.0.1: " + e.getMessage());
+        }
+    }
+    
+    // Méthodes helper pour accéder aux méthodes privées via réflexion
+    private boolean isValidMacAddress(String mac) {
+        try {
+            // Utilisation de réflexion pour accéder à la méthode privée
+            java.lang.reflect.Method method = ArpScanner.class.getDeclaredMethod(
+                "isValidMacAddress", String.class);
+            method.setAccessible(true);
+            return (boolean) method.invoke(arpScanner, mac);
+        } catch (Exception e) {
+            fail("Erreur d'accès à isValidMacAddress: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    private boolean isValidIpAddress(String ip) {
+        try {
+            // Utilisation de réflexion pour accéder à la méthode privée
+            java.lang.reflect.Method method = ArpScanner.class.getDeclaredMethod(
+                "isValidIpAddress", String.class);
+            method.setAccessible(true);
+            return (boolean) method.invoke(arpScanner, ip);
+        } catch (Exception e) {
+            fail("Erreur d'accès à isValidIpAddress: " + e.getMessage());
+            return false;
+        }
+    }
+}
