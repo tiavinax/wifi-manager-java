@@ -1,0 +1,219 @@
+package com.wifimanager.detector;
+
+import com.wifimanager.shared.model.Client;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+// import org.mockito.junit.jupiter.MockitoExtension;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+// @ExtendWith(MockitoExtension.class)
+public class ClientDiscoveryServiceTest {
+    
+    @Mock
+    private ArpScanner mockArpScanner;
+    
+    @Mock
+    private DhcpMonitor mockDhcpMonitor;
+    
+    private ClientDiscoveryService discoveryService;
+    
+    @BeforeEach
+    void setUp() {
+        // Créer un service avec des mocks
+        discoveryService = new ClientDiscoveryService("lo", "127.0.0.0/24");
+        
+        // Injecter les mocks via réflexion
+        try {
+            java.lang.reflect.Field arpScannerField = 
+                ClientDiscoveryService.class.getDeclaredField("arpScanner");
+            arpScannerField.setAccessible(true);
+            arpScannerField.set(discoveryService, mockArpScanner);
+            
+            java.lang.reflect.Field dhcpMonitorField = 
+                ClientDiscoveryService.class.getDeclaredField("dhcpMonitor");
+            dhcpMonitorField.setAccessible(true);
+            dhcpMonitorField.set(discoveryService, mockDhcpMonitor);
+            
+            // Réinitialiser le cache
+            java.lang.reflect.Field cacheField = 
+                ClientDiscoveryService.class.getDeclaredField("clientsCache");
+            cacheField.setAccessible(true);
+            Map<String, Client> cache = (Map<String, Client>) cacheField.get(discoveryService);
+            cache.clear();
+            
+        } catch (Exception e) {
+            fail("Erreur lors de l'injection des mocks: " + e.getMessage());
+        }
+    }
+    
+    @Test
+    void testDiscoverClients() {
+        // Configurer les mocks
+        Map<String, String> arpResults = Map.of(
+            "AA:BB:CC:DD:EE:FF", "192.168.1.100",
+            "11:22:33:44:55:66", "192.168.1.101"
+        );
+        
+        Map<String, String> dhcpResults = Map.of(
+            "AA:BB:CC:DD:EE:FF", "192.168.1.100",
+            "99:88:77:66:55:44", "192.168.1.102"
+        );
+        
+        when(mockArpScanner.scan()).thenReturn(arpResults);
+        when(mockDhcpMonitor.getActiveLeases()).thenReturn(dhcpResults);
+        
+        // Exécuter la découverte
+        discoveryService.discoverClients();
+        
+        // Vérifier les résultats
+        List<Client> clients = discoveryService.getAllClients();
+        assertEquals(3, clients.size(), "Doit trouver 3 clients");
+        
+        // Vérifier qu'un client existe
+        Client client = discoveryService.getClientByMac("AA:BB:CC:DD:EE:FF");
+        assertNotNull(client, "Client AA:BB:CC:DD:EE:FF doit exister");
+        assertEquals("192.168.1.100", client.getIpAddress(), "IP doit être 192.168.1.100");
+        assertTrue(client.isActive(), "Client doit être actif");
+        assertNotNull(client.getFirstSeen(), "firstSeen ne doit pas être null");
+        assertNotNull(client.getLastSeen(), "lastSeen ne doit pas être null");
+        
+        // Vérifier le compte
+        assertEquals(3, discoveryService.getTotalClientCount(), "Total doit être 3");
+        assertEquals(3, discoveryService.getActiveClientCount(), "Tous doivent être actifs initialement");
+    }
+    
+    @Test
+    void testGetClientByIp() {
+        // Setup
+        Map<String, String> arpResults = Map.of("AA:BB:CC:DD:EE:FF", "192.168.1.100");
+        when(mockArpScanner.scan()).thenReturn(arpResults);
+        when(mockDhcpMonitor.getActiveLeases()).thenReturn(Map.of());
+        
+        discoveryService.discoverClients();
+        
+        // Test
+        Client client = discoveryService.getClientByIp("192.168.1.100");
+        assertNotNull(client, "Client avec IP 192.168.1.100 doit exister");
+        assertEquals("AA:BB:CC:DD:EE:FF", client.getMacAddress(), "MAC doit correspondre");
+        
+        // Client non existant
+        Client notFound = discoveryService.getClientByIp("192.168.1.999");
+        assertNull(notFound, "IP non existante doit retourner null");
+    }
+    
+    @Test
+    void testUpdateClientTraffic() {
+        // Setup
+        Map<String, String> arpResults = Map.of("AA:BB:CC:DD:EE:FF", "192.168.1.100");
+        when(mockArpScanner.scan()).thenReturn(arpResults);
+        when(mockDhcpMonitor.getActiveLeases()).thenReturn(Map.of());
+        
+        discoveryService.discoverClients();
+        
+        // Mettre à jour le trafic
+        discoveryService.updateClientTraffic("AA:BB:CC:DD:EE:FF", 1000, 500);
+        
+        // Vérifier
+        Client client = discoveryService.getClientByMac("AA:BB:CC:DD:EE:FF");
+        assertEquals(1000, client.getBytesDownloaded(), "Downloaded doit être 1000");
+        assertEquals(500, client.getBytesUploaded(), "Uploaded doit être 500");
+        assertEquals(1500, client.getTotalBytes(), "Total doit être 1500");
+        
+        // Mettre à jour à nouveau
+        discoveryService.updateClientTraffic("AA:BB:CC:DD:EE:FF", 500, 250);
+        assertEquals(1500, client.getBytesDownloaded(), "Downloaded cumulé doit être 1500");
+        assertEquals(750, client.getBytesUploaded(), "Uploaded cumulé doit être 750");
+    }
+    
+    @Test
+    void testMarkClientDisconnected() {
+        // Setup
+        Map<String, String> arpResults = Map.of("AA:BB:CC:DD:EE:FF", "192.168.1.100");
+        when(mockArpScanner.scan()).thenReturn(arpResults);
+        when(mockDhcpMonitor.getActiveLeases()).thenReturn(Map.of());
+        
+        discoveryService.discoverClients();
+        
+        // Vérifier que le client est actif au début
+        Client client = discoveryService.getClientByMac("AA:BB:CC:DD:EE:FF");
+        assertTrue(client.isActive(), "Client doit être actif initialement");
+        
+        // Marquer comme déconnecté
+        discoveryService.markClientDisconnected("AA:BB:CC:DD:EE:FF");
+        
+        // Vérifier
+        assertFalse(client.isActive(), "Client doit être inactif après déconnexion");
+        assertNotNull(client.getLastSeen(), "lastSeen doit être mis à jour");
+    }
+    
+    @Test
+    void testGetActiveClients() {
+        // Setup avec 3 clients
+        Map<String, String> arpResults = Map.of(
+            "AA:BB:CC:DD:EE:FF", "192.168.1.100",
+            "11:22:33:44:55:66", "192.168.1.101",
+            "99:88:77:66:55:44", "192.168.1.102"
+        );
+        when(mockArpScanner.scan()).thenReturn(arpResults);
+        when(mockDhcpMonitor.getActiveLeases()).thenReturn(Map.of());
+        
+        discoveryService.discoverClients();
+        
+        // Marquer un comme inactif
+        discoveryService.markClientDisconnected("11:22:33:44:55:66");
+        
+        // Vérifier
+        List<Client> activeClients = discoveryService.getActiveClients();
+        assertEquals(2, activeClients.size(), "Doit y avoir 2 clients actifs");
+        
+        // Vérifier que seuls les actifs sont retournés
+        for (Client client : activeClients) {
+            assertTrue(client.isActive(), "Tous les clients retournés doivent être actifs");
+        }
+    }
+    
+    @Test
+    void testCachePersistenceBetweenCalls() {
+        // Vérifier que le cache conserve les données entre les appels
+        Map<String, String> arpResults = Map.of("AA:BB:CC:DD:EE:FF", "192.168.1.100");
+        when(mockArpScanner.scan()).thenReturn(arpResults);
+        when(mockDhcpMonitor.getActiveLeases()).thenReturn(Map.of());
+        
+        // Premier appel
+        discoveryService.discoverClients();
+        Client client1 = discoveryService.getClientByMac("AA:BB:CC:DD:EE:FF");
+        LocalDateTime firstSeen = client1.getFirstSeen();
+        
+        // Deuxième appel - le cache devrait conserver les données
+        Client client2 = discoveryService.getClientByMac("AA:BB:CC:DD:EE:FF");
+        
+        // Même objet ou même données
+        assertEquals(client1.getMacAddress(), client2.getMacAddress(), "MAC doit être identique");
+        assertEquals(firstSeen, client2.getFirstSeen(), "firstSeen doit être identique");
+        assertSame(client1, client2, "Doit retourner la même instance (cache)");
+    }
+    
+    @Test
+    void testNonExistentClientOperations() {
+        // Opérations sur un client qui n'existe pas ne doivent pas crash
+        assertDoesNotThrow(() -> {
+            discoveryService.updateClientTraffic("NON:EX:IS:TEN:T00", 1000, 500);
+        }, "updateClientTraffic sur client inexistant ne doit pas lever d'exception");
+        
+        assertDoesNotThrow(() -> {
+            discoveryService.markClientDisconnected("NON:EX:IS:TEN:T00");
+        }, "markClientDisconnected sur client inexistant ne doit pas lever d'exception");
+        
+        // Doit retourner null pour client inexistant
+        assertNull(discoveryService.getClientByMac("NON:EX:IS:TEN:T00"), 
+            "Client inexistant doit retourner null");
+        assertNull(discoveryService.getClientByIp("192.168.1.999"), 
+            "IP inexistante doit retourner null");
+    }
+}

@@ -1,0 +1,127 @@
+package com.wifimanager.detector;
+
+import com.wifimanager.shared.model.Client;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Tests d'intégration pour le module de détection
+ * Ces tests utilisent les vraies implémentations (pas de mocks)
+ */
+public class DetectorIntegrationTest {
+    
+    private ClientDiscoveryService discoveryService;
+    
+    @BeforeEach
+    void setUp() {
+        // Utilise l'interface loopback pour éviter les problèmes de permissions
+        discoveryService = new ClientDiscoveryService("lo", "127.0.0.0/24");
+    }
+    
+    @Test
+    void testServiceInitialization() {
+        assertNotNull(discoveryService, "Service ne doit pas être null");
+        assertEquals("lo", discoveryService.getNetworkInterface(), "Interface doit être 'lo'");
+        assertEquals("127.0.0.0/24", discoveryService.getSubnet(), "Subnet doit correspondre");
+    }
+    
+    @Test
+    void testDiscoverClientsMethodExists() {
+        // Test que la méthode discoverClients existe et ne crash pas
+        assertDoesNotThrow(() -> {
+            discoveryService.discoverClients();
+        }, "discoverClients() ne doit pas lever d'exception");
+    }
+    
+    @Test
+    void testGetAllClientsReturnsList() {
+        // discoverClients peut être appelé en arrière-plan
+        List<Client> clients = discoveryService.getAllClients();
+        assertNotNull(clients, "getAllClients() doit retourner une liste (pas null)");
+        // La liste peut être vide, c'est OK
+    }
+    
+    @Test
+    void testClientCreationAndRetrieval() {
+        // Test de création et récupération d'un client
+        String testMac = "TEST:MAC:ADD:RESS:00:01";
+        String testIp = "127.0.0.100";
+        
+        // Créer un client manuellement (pour le test)
+        Client testClient = new Client(testMac, testIp);
+        testClient.setHostname("Test-Device");
+        
+        // Ajouter au cache via réflexion
+        try {
+            java.lang.reflect.Field cacheField = 
+                ClientDiscoveryService.class.getDeclaredField("clientsCache");
+            cacheField.setAccessible(true);
+            java.util.Map<String, Client> cache = 
+                (java.util.Map<String, Client>) cacheField.get(discoveryService);
+            cache.put(testMac, testClient);
+            
+            // Récupérer via l'API publique
+            Client retrieved = discoveryService.getClientByMac(testMac);
+            assertNotNull(retrieved, "Client ajouté doit être récupérable");
+            assertEquals(testMac, retrieved.getMacAddress(), "MAC doit correspondre");
+            assertEquals(testIp, retrieved.getIpAddress(), "IP doit correspondre");
+            assertEquals("Test-Device", retrieved.getHostname(), "Hostname doit correspondre");
+            
+        } catch (Exception e) {
+            fail("Erreur lors du test d'ajout de client: " + e.getMessage());
+        }
+    }
+    
+    @Test
+    void testStatisticsMethods() {
+        // Test des méthodes de statistiques
+        int total = discoveryService.getTotalClientCount();
+        int active = discoveryService.getActiveClientCount();
+        
+        assertTrue(total >= 0, "Total client count doit être >= 0");
+        assertTrue(active >= 0, "Active client count doit être >= 0");
+        assertTrue(active <= total, "Actifs doivent être <= total");
+    }
+    
+    @Test
+    void testClientModelMethods() {
+        // Test des méthodes du modèle Client
+        Client client = new Client("00:11:22:33:44:55", "192.168.1.200");
+        
+        assertEquals("00:11:22:33:44:55", client.getMacAddress(), "MAC doit être en majuscules");
+        assertEquals("192.168.1.200", client.getIpAddress(), "IP doit correspondre");
+        assertTrue(client.isActive(), "Nouveau client doit être actif");
+        assertNotNull(client.getFirstSeen(), "firstSeen ne doit pas être null");
+        assertNotNull(client.getLastSeen(), "lastSeen ne doit pas être null");
+        
+        // Test des setters
+        client.setHostname("Test-Host");
+        assertEquals("Test-Host", client.getHostname(), "Hostname doit être mis à jour");
+        
+        client.setBytesDownloaded(1024);
+        client.setBytesUploaded(512);
+        assertEquals(1024, client.getBytesDownloaded(), "Downloaded doit être 1024");
+        assertEquals(512, client.getBytesUploaded(), "Uploaded doit être 512");
+        assertEquals(1536, client.getTotalBytes(), "Total doit être 1536");
+        
+        // Test equals/hashCode basé sur MAC
+        Client sameMac = new Client("00:11:22:33:44:55", "192.168.1.201");
+        Client differentMac = new Client("AA:BB:CC:DD:EE:FF", "192.168.1.200");
+        
+        assertEquals(client, sameMac, "Clients avec même MAC doivent être égaux");
+        assertNotEquals(client, differentMac, "Clients avec MAC différentes ne doivent pas être égaux");
+        assertEquals(client.hashCode(), sameMac.hashCode(), "HashCode doit être identique pour même MAC");
+    }
+    
+    @Test
+    void testClientInactivity() {
+        // Test de l'inactivité des clients
+        Client client = new Client("00:11:22:33:44:55", "192.168.1.200");
+        assertTrue(client.isActive(), "Nouveau client doit être actif");
+        
+        client.setActive(false);
+        assertFalse(client.isActive(), "Client doit être inactif après setActive(false)");
+    }
+}
