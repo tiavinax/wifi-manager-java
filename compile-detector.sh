@@ -1,5 +1,6 @@
 #!/bin/bash
-echo "🔨 COMPILATION AVEC LES JARs SLF4J"
+echo "🔨 COMPILATION MODULE 1 - DETECTOR AVEC LES JARs SLF4J"
+echo "=================================="
 
 # Vérifie que les JARs existent
 if [ ! -f "lib/slf4j-api-2.0.3.jar" ] || [ ! -f "lib/slf4j-simple-2.0.3.jar" ]; then

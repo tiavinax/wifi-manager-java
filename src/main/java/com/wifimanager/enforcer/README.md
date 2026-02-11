@@ -1,4 +1,23 @@
-# 📋 TODO - Module 2 : Contrôle (Enforcer)
+# Module 2 : Enforcer (Contrôle de quotas)
+
+Fonctionnalités :
+
+Application de règles (temps/données)
+
+Déconnexion automatique quand quota dépassé
+
+Limitation bande passante
+
+API pour communiquer avec Module 1 et 4
+
+# Structure :
+
+enforcer/
+├── QuotaManager.java          # Gestion quotas temps/données
+├── TrafficController.java     # iptables/TC pour limiter trafic
+├── DisconnectionService.java  # Déconnexion automatique
+├── EnforcerApiServer.java     # API pour dashboard
+└── EnforcerMain.java          # Point d'entrée
 
 ## 🎯 **Utilité du Module 2**
 
