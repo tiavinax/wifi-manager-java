@@ -17,6 +17,9 @@ JARS="lib/slf4j-api-2.0.3.jar:lib/slf4j-simple-2.0.3.jar"
 echo "1. Client.java..."
 javac -d target/classes src/main/java/com/wifimanager/shared/model/Client.java
 
+echo "2. ModuleBridge.java..."
+javac -d target/classes src/main/java/com/wifimanager/shared/communication/ModuleBridge.java
+
 echo "2. Constants.java..."
 javac -d target/classes -cp "target/classes" src/main/java/com/wifimanager/shared/config/Constants.java
 

@@ -4,7 +4,7 @@ echo "====================================="
 
 # Vérifie la compilation
 echo "1. Vérification compilation..."
-./compil.sh > /dev/null 2>&1
+./compile-detector.sh > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo "❌ Erreur de compilation"
     exit 1
