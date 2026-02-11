@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title th:text="${pageTitle} + ' - WiFi Manager'">WiFi Manager Dashboard</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom Dashboard CSS -->
+    <link href="/css/dashboard.css" rel="stylesheet">
+<body>
+    <div th:fragment="content">
+        <!-- Statistiques -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Clients connectés</h4>
+                    <div class="stat-number" th:text="${stats.totalClients}">0</div>
+                    <div class="stat-detail">
+                        <span th:text="${stats.activeClients}">0</span> actifs
+                    </div>
+                </div>
+                <div class="stat-icon">
+                    <i class="bi bi-devices"></i>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Quotas actifs</h4>
+                    <div class="stat-number" th:text="${stats.activeQuotas}">0</div>
+                    <div class="stat-detail">
+                        Total: <span th:text="${stats.totalQuotas}">0</span>
+                    </div>
+                </div>
+                <div class="stat-icon">
+                    <i class="bi bi-sliders2"></i>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h4>Trafic total</h4>
+                    <div class="stat-number" th:text="${stats.formattedTraffic}">0</div>
+                    <div class="stat-detail">
+                        Interface: <span th:text="${stats.networkInterface}">wlo1</span>
+                    </div>
+                </div>
+                <div class="stat-icon">
+                    <i class="bi bi-arrow-up-down"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Derniers clients -->
+        <div class="table-container">
+            <div class="table-header">
+                <h3>Derniers clients connectés</h3>
+                <div class="table-actions">
+                    <a th:href="@{/clients}" class="btn btn-primary btn-sm">
+                        Voir tous <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table" id="recentClientsTable">
+                    <thead>
+                        <tr>
+                            <th>Adresse MAC</th>
+                            <th>Adresse IP</th>
+                            <th>Statut</th>
+                            <th>Trafic</th>
+                            <th>Dernière vue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="client : ${recentClients}">
+                            <td>
+                                <strong th:text="${client.macAddress}">AA:BB:CC:DD:EE:FF</strong>
+                            </td>
+                            <td th:text="${client.ipAddress}">192.168.0.1</td>
+                            <td>
+                                <span th:class="'status-badge ' + ${client.statusClass}" 
+                                      th:text="${client.statusText}">Actif</span>
+                            </td>
+                            <td th:text="${client.formattedBytes}">0 B</td>
+                            <td th:text="${client.formattedFirstSeen}">-</td>
+                        </tr>
+                        <tr th:if="${recentClients.empty}">
+                            <td colspan="5" class="text-center text-muted py-4">
+                                <i class="bi bi-info-circle"></i>
+                                Aucun client connecté
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- État des modules -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="form-card">
+                    <h3>État des modules</h3>
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi bi-hdd-network fs-4 me-3"></i>
+                        <div>
+                            <strong>Module 1 - Détection</strong>
+                            <div th:class="'status-badge ' + (${stats.module1Online} ? 'status-active' : 'status-inactive')">
+                                <i th:class="${stats.module1Online} ? 'bi bi-check-circle' : 'bi bi-exclamation-circle'"></i>
+                                <span th:text="${stats.module1Online} ? 'En ligne' : 'Hors ligne'"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-shield-check fs-4 me-3"></i>
+                        <div>
+                            <strong>Module 2 - Enforcer</strong>
+                            <div th:class="'status-badge ' + (${stats.module2Online} ? 'status-active' : 'status-inactive')">
+                                <i th:class="${stats.module2Online} ? 'bi bi-check-circle' : 'bi bi-exclamation-circle'"></i>
+                                <span th:text="${stats.module2Online} ? 'En ligne' : 'Hors ligne'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="form-card">
+                    <h3>Actions rapides</h3>
+                    <div class="d-grid gap-2">
+                        <a th:href="@{/quotas}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Créer un quota
+                        </a>
+                        <a th:href="@{/clients}" class="btn btn-outline-primary">
+                            <i class="bi bi-people"></i> Gérer les clients
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        function refreshStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    // Mettre à jour les cartes
+                    document.querySelectorAll('.stat-number')[0].textContent = data.totalClients;
+                    document.querySelectorAll('.stat-detail span')[0].textContent = data.activeClients;
+                    document.querySelectorAll('.stat-number')[1].textContent = data.activeQuotas;
+                    document.querySelectorAll('.stat-detail')[1].innerHTML = 'Total: ' + data.totalQuotas;
+                    document.querySelectorAll('.stat-number')[2].textContent = data.formattedTraffic;
+                })
+                .catch(console.error);
+        }
+        
+        // Rafraîchir toutes les 30 secondes
+        setInterval(refreshStats, 30000);
+        /*]]>*/
+    </script>
+</body>
+</html>

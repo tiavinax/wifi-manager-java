@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <title th:text="${pageTitle} + ' - WiFi Manager'">WiFi Manager Dashboard</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom Dashboard CSS -->
+    <link href="/css/dashboard.css" rel="stylesheet">
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Formulaire de création -->
+            <div class="col-lg-4 mb-4">
+                <div class="form-card">
+                    <h3>
+                        <i class="bi bi-plus-circle"></i>
+                        Nouveau quota
+                    </h3>
+                    
+                    <form id="quotaCreateForm" method="post" th:action="@{/api/quotas/create}">
+                        <div class="form-group">
+                            <label class="form-label">Adresse MAC</label>
+                            <select class="form-control" id="macSelect" required>
+                                <option value="">Sélectionner un client...</option>
+                                <option th:each="client : ${clients}" 
+                                        th:value="${client.macAddress}"
+                                        th:text="${client.macAddress} + ' - ' + ${client.ipAddress}">
+                                </option>
+                                <option value="ALL">Appliquer à tous les clients</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Temps (minutes)</label>
+                            <input type="number" class="form-control" id="timeMinutes" 
+                                   min="1" max="1440" value="60" required>
+                            <small class="text-muted">1 - 1440 minutes (24h)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Données (Mo)</label>
+                            <input type="number" class="form-control" id="dataMB" 
+                                   min="1" max="10240" value="500" required>
+                            <small class="text-muted">1 - 10240 Mo (10 Go)</small>
+                        </div>
+                        
+                        <button type="button" class="btn btn-primary w-100" onclick="submitQuota()">
+                            <i class="bi bi-check-circle"></i>
+                            Appliquer le quota
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Statistiques rapides -->
+                <div class="form-card mt-4">
+                    <h4>Résumé</h4>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Quotas actifs:</span>
+                        <strong th:text="${stats.activeQuotas}">0</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Clients avec quota:</span>
+                        <strong th:text="${quotas.size()}">0</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Liste des quotas -->
+            <div class="col-lg-8">
+                <div class="table-container">
+                    <div class="table-header">
+                        <h3>Quotas actifs</h3>
+                        <div class="table-search">
+                            <i class="bi bi-search"></i>
+                            <input type="text" id="searchQuotas" data-table="quotasTable" 
+                                   placeholder="Rechercher..." class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table" id="quotasTable">
+                            <thead>
+                                <tr>
+                                    <th>Client</th>
+                                    <th>Temps</th>
+                                    <th>Données</th>
+                                    <th>Utilisation</th>
+                                    <th>Statut</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="quota : ${quotas}">
+                                    <td>
+                                        <strong th:text="${quota.macAddress}">AA:BB:CC:DD:EE:FF</strong>
+                                    </td>
+                                    <td>
+                                        <span th:text="${quota.timeUsedMinutes} + '/' + ${quota.timeLimitMinutes} + ' min'">
+                                            15/60 min
+                                        </span>
+                                        <br>
+                                        <small class="text-muted" 
+                                               th:text="${quota.timeRemaining} + ' min restantes'">
+                                            45 min restantes
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span th:text="${quota.dataUsedMB} + '/' + ${quota.dataLimitMB} + ' Mo'">
+                                            50/500 Mo
+                                        </span>
+                                        <br>
+                                        <small class="text-muted" 
+                                               th:text="${quota.dataRemaining} + ' Mo restants'">
+                                            450 Mo restants
+                                        </small>
+                                    </td>
+                                    <td style="min-width: 150px;">
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar" 
+                                                 th:classappend="${quota.progressClass}"
+                                                 th:style="'width: ' + ${quota.dataPercentage} + '%'">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted" 
+                                               th:text="${quota.dataPercentage} + '% utilisé'">
+                                            10% utilisé
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span th:if="${quota.exceeded}" class="badge bg-danger">
+                                            Dépassé
+                                        </span>
+                                        <span th:unless="${quota.exceeded}" class="badge bg-success">
+                                            Actif
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                th:onclick="'deleteQuota(\'' + ${quota.macAddress} + '\')'">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr th:if="${quotas.empty}">
+                                    <td colspan="6" class="text-center text-muted py-5">
+                                        <i class="bi bi-sliders2" style="font-size: 3rem;"></i>
+                                        <p class="mt-3">Aucun quota actif</p>
+                                        <p class="small">Créez un quota pour limiter l'accès</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        function submitQuota() {
+            const mac = document.getElementById('macSelect').value;
+            const time = document.getElementById('timeMinutes').value;
+            const data = document.getElementById('dataMB').value;
+            
+            if (!mac) {
+                showNotification('Veuillez sélectionner un client', 'warning');
+                return;
+            }
+            
+            const params = new URLSearchParams({
+                mac: mac,
+                time: time,
+                data: data
+            });
+            
+            fetch('/api/quotas/create?' + params.toString(), {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                showNotification('Quota créé avec succès', 'success');
+                setTimeout(() => window.location.reload(), 1500);
+            })
+            .catch(error => {
+                showNotification('Erreur: ' + error.message, 'error');
+            });
+        }
+        
+        function deleteQuota(mac) {
+            if (confirm('Voulez-vous supprimer ce quota ?')) {
+                fetch('/api/quotas/' + mac, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        showNotification('Quota supprimé', 'success');
+                        setTimeout(() => window.location.reload(), 1500);
+                    }
+                });
+            }
+        }
+        
+        function refreshQuotas() {
+            window.location.reload();
+        }
+        
+        // Recherche en temps réel
+        document.getElementById('searchQuotas')?.addEventListener('keyup', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#quotasTable tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+        /*]]>*/
+    </script>
+</body>
+</html>
