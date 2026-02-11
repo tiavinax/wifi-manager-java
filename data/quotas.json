@@ -1,13 +1,13 @@
 [
   {
     "macAddress": "D8:42:F7:2A:20:4F",
-    "timeLimitMinutes": 3,
-    "dataLimitMB": 50,
-    "lastUpdate": "2026-02-11T20:34:48.195501364",
-    "startTime": "2026-02-11T20:34:48.195416183",
-    "quotaId": "D8:42:F7:2A:20:4F_1770831288195",
+    "timeLimitMinutes": 1,
+    "dataLimitMB": 10,
+    "lastUpdate": "2026-02-11T22:20:43.244033713",
+    "startTime": "2026-02-11T22:20:39.076607053",
+    "quotaId": "D8:42:F7:2A:20:4F_1770837639076",
     "isActive": false,
-    "timeUsedMinutes": 3,
+    "timeUsedMinutes": 1,
     "dataUsedMB": 0
   }
 ]

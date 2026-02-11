@@ -335,6 +335,12 @@ public class EnforcerApiServer {
 
     private void sendJsonResponse(HttpExchange exchange, int code, Object data)
             throws IOException {
+
+        // ✅ AJOUTE CES HEADERS CORS
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+
         String response = toSimpleJson(data);
 
         exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -344,6 +350,15 @@ public class EnforcerApiServer {
             os.write(response.getBytes(StandardCharsets.UTF_8));
         }
     }
+
+    // ✅ AJOUTE CE HANDLER POUR OPTIONS
+    
+    // private void handleOptions(HttpExchange exchange) throws IOException {
+    //     exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+    //     exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
+    //     exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+    //     exchange.sendResponseHeaders(204, -1);
+    // }
 
     private void sendError(HttpExchange exchange, int code, String message)
             throws IOException {
