@@ -7,20 +7,20 @@ let clientsData = [];
 let quotasData = [];
 let currentMacAddress = '';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('📋 Page Clients chargée');
-    
+
     // Afficher le contenu
     const content = document.getElementById('pageContent');
     if (content) content.style.display = 'block';
-    
+
     // Charger les données
     loadClients();
     loadAllQuotas();
-    
+
     // Configurer les événements
     setupEventListeners();
-    
+
     // Rafraîchissement automatique toutes les 10s
     setInterval(loadClients, 10000);
     setInterval(loadAllQuotas, 15000);
@@ -32,7 +32,7 @@ function setupEventListeners() {
     if (searchInput) {
         searchInput.addEventListener('keyup', filterClients);
     }
-    
+
     // Bouton créer quota
     const createBtn = document.getElementById('createQuotaBtn');
     if (createBtn) {
@@ -65,7 +65,7 @@ function loadClients() {
         .catch(error => {
             console.error('Erreur chargement clients:', error);
             showNotification('❌ Module 1 (Détection) hors ligne', 'error');
-            
+
             const tbody = document.getElementById('clientsTableBody');
             if (tbody) {
                 tbody.innerHTML = `
@@ -87,7 +87,6 @@ function loadClients() {
 // ========== MODULE 2 - ENFORCER API (via proxy) ==========
 
 function loadAllQuotas() {
-    // ✅ UTILISE LE PROXY - GET /quota/ (sans MAC = tous les quotas)
     fetch('/api/enforcer/quota/')
         .then(response => {
             if (!response.ok) throw new Error('Module 2 hors ligne');
@@ -96,11 +95,26 @@ function loadAllQuotas() {
         .then(text => {
             try {
                 const data = JSON.parse(text);
-                // La réponse est { "count": X, "quotas": [...] }
-                quotasData = data.quotas || [];
+                
+                // ✅ CORRECTION: Gérer les deux formats possibles
+                if (data.quotas && data.quotas.length > 0) {
+                    // Vérifier si c'est une stringe ou un objet
+                    if (typeof data.quotas[0] === 'string') {
+                        // Format: "Quota{mac=...}" → Convertir en objet
+                        quotasData = data.quotas.map(quotaStr => {
+                            return parseQuotaString(quotaStr);
+                        });
+                    } else {
+                        // Format: objet JSON normal
+                        quotasData = data.quotas;
+                    }
+                } else {
+                    quotasData = [];
+                }
+                
                 console.log('✅ Quotas chargés:', quotasData.length);
                 updateQuotasBadge();
-                updateClientsTable(); // Mettre à jour l'affichage des quotas
+                updateClientsTable();
             } catch (e) {
                 console.error('Erreur parsing quotas:', e);
                 quotasData = [];
@@ -111,6 +125,73 @@ function loadAllQuotas() {
             quotasData = [];
         });
 }
+
+// ✅ NOUVELLE FONCTION: Parser la stringe "Quota{mac=...}"
+function parseQuotaString(quotaStr) {
+    try {
+        // Format: Quota{mac=D8:42:F7:2A:20:4F, time=2/5 min, data=0/15 MB, active=true}
+        const quota = {};
+        
+        // Extraire MAC
+        const macMatch = quotaStr.match(/mac=([^,]+)/);
+        if (macMatch) quota.macAddress = macMatch[1];
+        
+        // Extraire time
+        const timeMatch = quotaStr.match(/time=(\d+)\/(\d+)/);
+        if (timeMatch) {
+            quota.timeUsedMinutes = parseInt(timeMatch[1]);
+            quota.timeLimitMinutes = parseInt(timeMatch[2]);
+            quota.timeRemainingMinutes = quota.timeLimitMinutes - quota.timeUsedMinutes;
+        }
+        
+        // Extraire data
+        const dataMatch = quotaStr.match(/data=(\d+)\/(\d+)/);
+        if (dataMatch) {
+            quota.dataUsedMB = parseInt(dataMatch[1]);
+            quota.dataLimitMB = parseInt(dataMatch[2]);
+            quota.dataRemainingMB = quota.dataLimitMB - quota.dataUsedMB;
+        }
+        
+        // Extraire active
+        const activeMatch = quotaStr.match(/active=(\w+)/);
+        if (activeMatch) {
+            quota.isActive = activeMatch[1] === 'true';
+            quota.isExceeded = quota.timeUsedMinutes >= quota.timeLimitMinutes || 
+                               quota.dataUsedMB >= quota.dataLimitMB;
+        }
+        
+        return quota;
+    } catch (e) {
+        console.error('Erreur parsing quota string:', e);
+        return null;
+    }
+}
+
+// function loadAllQuotas() {
+//     // ✅ UTILISE LE PROXY - GET /quota/ (sans MAC = tous les quotas)
+//     fetch('/api/enforcer/quota/')
+//         .then(response => {
+//             if (!response.ok) throw new Error('Module 2 hors ligne');
+//             return response.text();
+//         })
+//         .then(text => {
+//             try {
+//                 const data = JSON.parse(text);
+//                 // La réponse est { "count": X, "quotas": [...] }
+//                 quotasData = data.quotas || [];
+//                 console.log('✅ Quotas chargés:', quotasData.length);
+//                 updateQuotasBadge();
+//                 updateClientsTable(); // Mettre à jour l'affichage des quotas
+//             } catch (e) {
+//                 console.error('Erreur parsing quotas:', e);
+//                 quotasData = [];
+//             }
+//         })
+//         .catch(error => {
+//             console.error('Erreur chargement quotas:', error);
+//             quotasData = [];
+//         });
+// }
 
 function loadQuotaForClient(mac) {
     // ✅ UTILISE LE PROXY - GET /quota/{mac}
@@ -135,21 +216,21 @@ function createQuota() {
     const mac = currentMacAddress;
     const time = document.getElementById('modalTimeMinutes').value;
     const data = document.getElementById('modalDataMB').value;
-    
+
     if (!mac) {
         showNotification('❌ Adresse MAC requise', 'error');
         return;
     }
-    
+
     // Format exact attendu par l'API
     const quotaData = {
         mac: mac,
         timeMinutes: parseInt(time),
         dataMB: parseInt(data)
     };
-    
+
     console.log('📤 Création quota:', quotaData);
-    
+
     // ✅ UTILISE LE PROXY - POST /quota/set
     fetch('/api/enforcer/quota/set', {
         method: 'POST',
@@ -158,42 +239,42 @@ function createQuota() {
         },
         body: JSON.stringify(quotaData)
     })
-    .then(response => {
-        if (!response.ok) {
-            return response.text().then(text => {
-                try {
-                    const error = JSON.parse(text);
-                    throw new Error(error.message || 'Erreur création quota');
-                } catch (e) {
-                    throw new Error('Erreur ' + response.status);
-                }
-            });
-        }
-        return response.text();
-    })
-    .then(text => {
-        try {
-            const data = JSON.parse(text);
-            console.log('✅ Quota créé:', data);
-            showNotification('✅ Quota créé avec succès', 'success');
-            
-            // Fermer le modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('quotaModal'));
-            if (modal) modal.hide();
-            
-            // Recharger les données
-            loadAllQuotas();
-            setTimeout(() => loadClients(), 1000);
-        } catch (e) {
-            console.error('Erreur parsing réponse:', e);
-            showNotification('✅ Quota créé (réponse non parsée)', 'success');
-            loadAllQuotas();
-        }
-    })
-    .catch(error => {
-        console.error('❌ Erreur:', error);
-        showNotification('❌ ' + error.message, 'error');
-    });
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    try {
+                        const error = JSON.parse(text);
+                        throw new Error(error.message || 'Erreur création quota');
+                    } catch (e) {
+                        throw new Error('Erreur ' + response.status);
+                    }
+                });
+            }
+            return response.text();
+        })
+        .then(text => {
+            try {
+                const data = JSON.parse(text);
+                console.log('✅ Quota créé:', data);
+                showNotification('✅ Quota créé avec succès', 'success');
+
+                // Fermer le modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('quotaModal'));
+                if (modal) modal.hide();
+
+                // Recharger les données
+                loadAllQuotas();
+                setTimeout(() => loadClients(), 1000);
+            } catch (e) {
+                console.error('Erreur parsing réponse:', e);
+                showNotification('✅ Quota créé (réponse non parsée)', 'success');
+                loadAllQuotas();
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erreur:', error);
+            showNotification('❌ ' + error.message, 'error');
+        });
 }
 
 function disconnectClient(mac) {
@@ -202,24 +283,24 @@ function disconnectClient(mac) {
         fetch('/api/enforcer/disconnect/' + mac, {
             method: 'POST'
         })
-        .then(response => {
-            if (!response.ok) throw new Error('Échec déconnexion');
-            return response.text();
-        })
-        .then(text => {
-            try {
-                const data = JSON.parse(text);
-                showNotification('🔌 ' + (data.message || 'Client déconnecté'), 'success');
-            } catch (e) {
-                showNotification('🔌 Client déconnecté', 'success');
-            }
-            // Mettre à jour l'affichage
-            setTimeout(() => loadClients(), 1000);
-        })
-        .catch(error => {
-            console.error('❌ Erreur déconnexion:', error);
-            showNotification('❌ Erreur déconnexion', 'error');
-        });
+            .then(response => {
+                if (!response.ok) throw new Error('Échec déconnexion');
+                return response.text();
+            })
+            .then(text => {
+                try {
+                    const data = JSON.parse(text);
+                    showNotification('🔌 ' + (data.message || 'Client déconnecté'), 'success');
+                } catch (e) {
+                    showNotification('🔌 Client déconnecté', 'success');
+                }
+                // Mettre à jour l'affichage
+                setTimeout(() => loadClients(), 1000);
+            })
+            .catch(error => {
+                console.error('❌ Erreur déconnexion:', error);
+                showNotification('❌ Erreur déconnexion', 'error');
+            });
     }
 }
 
@@ -228,18 +309,18 @@ function disconnectClient(mac) {
 function showQuotaForm(mac) {
     currentMacAddress = mac;
     document.getElementById('modalMacAddress').value = mac;
-    
+
     // Réinitialiser les valeurs par défaut
     document.getElementById('modalTimeMinutes').value = '60';
     document.getElementById('modalDataMB').value = '500';
-    
+
     new bootstrap.Modal(document.getElementById('quotaModal')).show();
 }
 
 function updateClientsTable() {
     const tbody = document.getElementById('clientsTableBody');
     if (!tbody) return;
-    
+
     if (!clientsData || clientsData.length === 0) {
         tbody.innerHTML = `
             <tr>
@@ -252,7 +333,7 @@ function updateClientsTable() {
         `;
         return;
     }
-    
+
     let html = '';
     clientsData.forEach(client => {
         const quota = findQuotaForClient(client.macAddress);
@@ -261,7 +342,7 @@ function updateClientsTable() {
         const statusText = client.active ? 'Actif' : 'Inactif';
         const totalBytes = formatBytes(client.totalBytes || 0);
         const deviceType = getDeviceType(client.macAddress);
-        
+
         html += `
             <tr>
                 <td>
@@ -288,7 +369,7 @@ function updateClientsTable() {
             </tr>
         `;
     });
-    
+
     tbody.innerHTML = html;
 }
 
@@ -301,15 +382,23 @@ function getQuotaHtml(quota) {
     if (!quota) {
         return '<span class="badge bg-secondary">Aucun quota</span>';
     }
-    
+
     const timeRemaining = quota.timeRemainingMinutes || 0;
     const dataRemaining = quota.dataRemainingMB || 0;
     const isExceeded = quota.isExceeded || false;
-    
+    const isActive = quota.isActive || false;
+
+    // ✅ AFFICHE TOUJOURS le quota, même si dépassé
     if (isExceeded) {
-        return '<span class="badge bg-danger">Quota dépassé</span>';
+        return `
+            <span class="badge bg-danger">⚠️ Quota dépassé</span>
+            <br>
+            <small class="text-muted">${quota.timeUsedMinutes || 0}/${quota.timeLimitMinutes || 0} min</small>
+            <br>
+            <small class="text-muted">${quota.dataUsedMB || 0}/${quota.dataLimitMB || 0} Mo</small>
+        `;
     }
-    
+
     return `
         <span class="badge bg-info">
             ${timeRemaining} min / ${dataRemaining} Mo
@@ -320,12 +409,35 @@ function getQuotaHtml(quota) {
         <small class="text-muted">${quota.dataUsedMB || 0}/${quota.dataLimitMB || 0} Mo</small>
     `;
 }
+// function getQuotaHtml(quota) {
+//     if (!quota) {
+//         return '<span class="badge bg-secondary">Aucun quota</span>';
+//     }
+
+//     const timeRemaining = quota.timeRemainingMinutes || 0;
+//     const dataRemaining = quota.dataRemainingMB || 0;
+//     const isExceeded = quota.isExceeded || false;
+
+//     if (isExceeded) {
+//         return '<span class="badge bg-danger">Quota dépassé</span>';
+//     }
+
+//     return `
+//         <span class="badge bg-info">
+//             ${timeRemaining} min / ${dataRemaining} Mo
+//         </span>
+//         <br>
+//         <small class="text-muted">${quota.timeUsedMinutes || 0}/${quota.timeLimitMinutes || 0} min</small>
+//         <br>
+//         <small class="text-muted">${quota.dataUsedMB || 0}/${quota.dataLimitMB || 0} Mo</small>
+//     `;
+// }
 
 function updateClientsStats() {
     const total = clientsData.length;
     const active = clientsData.filter(c => c.active).length;
     const totalTraffic = clientsData.reduce((sum, c) => sum + (c.totalBytes || 0), 0);
-    
+
     document.getElementById('totalClients').textContent = total;
     document.getElementById('activeClients').textContent = active;
     document.getElementById('totalTraffic').textContent = formatBytes(totalTraffic);
@@ -352,7 +464,7 @@ function updateQuotasBadge() {
 function filterClients() {
     const searchTerm = document.getElementById('searchClients').value.toLowerCase();
     const rows = document.querySelectorAll('#clientsTable tbody tr');
-    
+
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(searchTerm) ? '' : 'none';
@@ -362,14 +474,14 @@ function filterClients() {
 function getDeviceType(mac) {
     if (!mac) return 'Inconnu';
     mac = mac.toUpperCase();
-    
+
     if (mac.startsWith('D8:42:F7')) return 'Routeur TP-Link';
     if (mac.startsWith('7C:5C:F8')) return 'PC Portable HP';
     if (mac.startsWith('00:11:22')) return 'Équipement Cisco';
     if (mac.startsWith('AA:BB:CC')) return 'Appareil test';
     if (mac.startsWith('64:BC:0C') || mac.startsWith('3C:CD:5D')) return 'Smartphone';
     if (mac.startsWith('54:60:B8')) return 'Ordinateur';
-    
+
     return 'Appareil réseau';
 }
 
@@ -387,14 +499,14 @@ function showNotification(message, type) {
         alert(message);
         return;
     }
-    
+
     const icons = {
         success: 'check-circle-fill',
         error: 'exclamation-circle-fill',
         warning: 'exclamation-triangle-fill',
         info: 'info-circle-fill'
     };
-    
+
     notificationArea.style.display = 'block';
     notificationArea.className = 'notification-area alert alert-' + type;
     notificationArea.innerHTML = `
@@ -404,7 +516,7 @@ function showNotification(message, type) {
             <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.style.display='none'"></button>
         </div>
     `;
-    
+
     setTimeout(() => {
         notificationArea.style.display = 'none';
     }, 5000);

@@ -34,6 +34,12 @@ public class QuotaManager {
         macAddress = macAddress.toUpperCase();
 
         Quota quota = new Quota(macAddress, timeMinutes, dataMB);
+        // ✅ FORCER timeUsedMinutes à 0
+        quota.setTimeUsedMinutes(0);
+        quota.setDataUsedMB(0);
+        quota.setActive(true);
+        quota.setExceeded(false);
+
         quotas.put(macAddress, quota);
 
         logger.info("Nouveau quota défini: {} → {} min, {} MB",

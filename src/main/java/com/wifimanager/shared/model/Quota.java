@@ -26,6 +26,10 @@ public class Quota {
         this.isActive = true;
         this.quotaId = generateQuotaId();
     }
+
+    public void setExceeded(boolean exceeded) {
+        this.isActive = !exceeded;
+    }
     
     private String generateQuotaId() {
         return macAddress + "_" + System.currentTimeMillis();

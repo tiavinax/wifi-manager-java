@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -163,17 +164,35 @@ public class EnforcerApiServer {
         String macAddress = path.substring("/quota/".length());
 
         if (macAddress.isEmpty()) {
-            // Retourner tous les quotas
+
             List<com.wifimanager.shared.model.Quota> allQuotas = quotaManager.getAllQuotas();
 
+            // Convertir chaque quota en Map pour JSON
+            List<Map<String, Object>> quotasJson = new ArrayList<>();
+            for (com.wifimanager.shared.model.Quota quota : allQuotas) {
+                Map<String, Object> q = new HashMap<>();
+                q.put("macAddress", quota.getMacAddress());
+                q.put("timeLimitMinutes", quota.getTimeLimitMinutes());
+                q.put("dataLimitMB", quota.getDataLimitMB());
+                q.put("timeUsedMinutes", quota.getTimeUsedMinutes());
+                q.put("dataUsedMB", quota.getDataUsedMB());
+                q.put("timeRemainingMinutes", quota.getTimeRemainingMinutes());
+                q.put("dataRemainingMB", quota.getDataRemainingMB());
+                q.put("isActive", quota.isActive());
+                q.put("isExceeded", quota.isExceeded());
+                q.put("startTime", quota.getStartTime().toString());
+                quotasJson.add(q);
+            }
+
             Map<String, Object> response = new HashMap<>();
-            response.put("count", allQuotas.size());
-            response.put("quotas", allQuotas);
+            response.put("count", quotasJson.size());
+            response.put("quotas", quotasJson);
 
             sendJsonResponse(exchange, 200, response);
             return;
         }
 
+        // Pour un quota spécifique - déjà en Map, c'est bon
         com.wifimanager.shared.model.Quota quota = quotaManager.getQuota(macAddress);
 
         if (quota == null) {
@@ -352,12 +371,14 @@ public class EnforcerApiServer {
     }
 
     // ✅ AJOUTE CE HANDLER POUR OPTIONS
-    
+
     // private void handleOptions(HttpExchange exchange) throws IOException {
-    //     exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-    //     exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
-    //     exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
-    //     exchange.sendResponseHeaders(204, -1);
+    // exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+    // exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST,
+    // OPTIONS, DELETE");
+    // exchange.getResponseHeaders().set("Access-Control-Allow-Headers",
+    // "Content-Type");
+    // exchange.sendResponseHeaders(204, -1);
     // }
 
     private void sendError(HttpExchange exchange, int code, String message)

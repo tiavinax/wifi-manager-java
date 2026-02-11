@@ -2,10 +2,10 @@
   {
     "macAddress": "D8:42:F7:2A:20:4F",
     "timeLimitMinutes": 1,
-    "dataLimitMB": 10,
-    "lastUpdate": "2026-02-11T22:20:43.244033713",
-    "startTime": "2026-02-11T22:20:39.076607053",
-    "quotaId": "D8:42:F7:2A:20:4F_1770837639076",
+    "dataLimitMB": 5,
+    "lastUpdate": "2026-02-11T23:41:59.192882091",
+    "startTime": "2026-02-11T23:41:39.162980170",
+    "quotaId": "D8:42:F7:2A:20:4F_1770842499163",
     "isActive": false,
     "timeUsedMinutes": 1,
     "dataUsedMB": 0
