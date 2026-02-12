@@ -22,6 +22,7 @@ public class DashboardServer {
         server.createContext("/clients", new PageHandler("clients.html"));
         server.createContext("/quotas", new PageHandler("quotas.html"));
         server.createContext("/stats", new PageHandler("stats.html"));
+        server.createContext("/blocked", new PageHandler("blocked.html"));
 
         // ========== FICHIERS STATIQUES ==========
         server.createContext("/css", new StaticHandler("src/main/resources/static/css"));

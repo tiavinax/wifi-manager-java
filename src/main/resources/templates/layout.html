@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WiFi Manager - Dashboard</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -12,6 +13,7 @@
     <!-- Dashboard CSS -->
     <link href="/css/dashboard.css" rel="stylesheet">
 </head>
+
 <body>
     <div class="dashboard-wrapper">
         <!-- Sidebar -->
@@ -20,7 +22,7 @@
                 <i class="bi bi-wifi logo-icon"></i>
                 <span class="logo-text">WiFi Manager</span>
             </div>
-            
+
             <div class="user-info">
                 <div class="user-avatar">
                     <i class="bi bi-person-circle"></i>
@@ -30,7 +32,7 @@
                     <div class="user-role">Super Admin</div>
                 </div>
             </div>
-            
+
             <div class="modules-status" id="modulesStatus">
                 <div class="status-item">
                     <span>Module 1 - Détection</span>
@@ -45,7 +47,7 @@
                     </span>
                 </div>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <ul class="nav-menu">
                     <li class="nav-item" id="nav-dashboard">
@@ -68,9 +70,17 @@
                             <span class="nav-badge" id="quotasCount">0</span>
                         </a>
                     </li>
-                    
+
+                    <li class="nav-item" id="nav-blocked">
+                        <a class="nav-link" href="/blocked">
+                            <i class="bi bi-shield-lock"></i>
+                            <span>Clients bloqués</span>
+                            <span class="nav-badge" id="blockedCount">0</span>
+                        </a>
+                    </li>
+
                     <li class="nav-divider"></li>
-                    
+
                     <li class="nav-item" id="nav-stats">
                         <a class="nav-link" href="/stats">
                             <i class="bi bi-graph-up"></i>
@@ -85,7 +95,7 @@
                     </li>
                 </ul>
             </nav>
-            
+
             <div class="sidebar-footer">
                 <div class="network-info">
                     <i class="bi bi-hdd-network"></i>
@@ -96,7 +106,7 @@
                 </div>
             </div>
         </aside>
-        
+
         <!-- Main Content -->
         <main class="main-content">
             <div class="top-bar">
@@ -123,40 +133,40 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Notification Area -->
             <div id="notificationArea" class="notification-area" style="display: none;"></div>
-            
+
             <!-- Page Content -->
             <div id="pageContent">
                 <!-- Le contenu sera injecté ici -->
             </div>
         </main>
     </div>
-    
+
     <!-- Bootstrap JS -->
     <script src="/js/bootstrap.bundle.min.js"></script>
     <!-- Dashboard JS (commun) -->
     <script src="/js/dashboard.js"></script>
     <!-- Page specific JS -->
     <!-- PAGE_SCRIPT -->
-    
+
     <script>
         // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             updateDateTime();
             setInterval(updateDateTime, 1000);
             checkModulesStatus();
             setInterval(checkModulesStatus, 30000);
             updateNavActive();
         });
-        
+
         function updateDateTime() {
             const now = new Date();
-            const options = { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
@@ -166,7 +176,7 @@
                 element.textContent = now.toLocaleDateString('fr-FR', options);
             }
         }
-        
+
         function checkModulesStatus() {
             fetch('/api/health')
                 .then(response => response.ok ? 'En ligne' : 'Hors ligne')
@@ -184,7 +194,7 @@
                         el.innerHTML = '<i class="bi bi-exclamation-circle-fill"></i> Hors ligne';
                     }
                 });
-            
+
             fetch('/health')
                 .then(response => response.ok ? 'En ligne' : 'Hors ligne')
                 .then(status => {
@@ -202,11 +212,11 @@
                     }
                 });
         }
-        
+
         function updateNavActive() {
             const path = window.location.pathname;
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            
+
             if (path === '/' || path === '/index') {
                 document.getElementById('nav-dashboard')?.classList.add('active');
                 document.getElementById('pageTitle').textContent = 'Tableau de bord';
@@ -225,22 +235,22 @@
                 document.getElementById('breadcrumbCurrent').textContent = 'Statistiques';
             }
         }
-        
+
         function confirmLogout() {
             return confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
         }
-        
+
         function showNotification(message, type = 'success') {
             const notificationArea = document.getElementById('notificationArea');
             if (!notificationArea) return;
-            
+
             const icons = {
                 success: 'check-circle-fill',
                 error: 'exclamation-circle-fill',
                 warning: 'exclamation-triangle-fill',
                 info: 'info-circle-fill'
             };
-            
+
             notificationArea.style.display = 'block';
             notificationArea.className = 'notification-area alert alert-' + type;
             notificationArea.innerHTML = `
@@ -250,15 +260,16 @@
                     <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.style.display='none'"></button>
                 </div>
             `;
-            
+
             setTimeout(() => {
                 notificationArea.style.display = 'none';
             }, 5000);
         }
-        
+
         function showNotifications() {
             showNotification('Aucune nouvelle notification', 'info');
         }
     </script>
 </body>
+
 </html>

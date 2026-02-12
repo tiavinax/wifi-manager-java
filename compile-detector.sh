@@ -18,28 +18,37 @@ echo "1. Client.java..."
 javac -d target/classes src/main/java/com/wifimanager/shared/model/Client.java
 
 echo "2. ModuleBridge.java..."
-javac -d target/classes src/main/java/com/wifimanager/shared/communication/ModuleBridge.java
+# ✅ AJOUT DE SLF4J POUR MODULEBRIDGE
+javac -d target/classes -cp "target/classes:$JARS" \
+      src/main/java/com/wifimanager/shared/communication/ModuleBridge.java
 
-echo "2. Constants.java..."
-javac -d target/classes -cp "target/classes" src/main/java/com/wifimanager/shared/config/Constants.java
+echo "3. Constants.java..."
+javac -d target/classes -cp "target/classes" \
+      src/main/java/com/wifimanager/shared/config/Constants.java
 
-echo "3. ApiResponse.java..."
-javac -d target/classes -cp "target/classes" src/main/java/com/wifimanager/shared/api/ApiResponse.java
+echo "4. ApiResponse.java..."
+javac -d target/classes -cp "target/classes" \
+      src/main/java/com/wifimanager/shared/api/ApiResponse.java
 
-echo "4. ArpScanner.java..."
-javac -d target/classes -cp "target/classes:$JARS" src/main/java/com/wifimanager/detector/ArpScanner.java
+echo "5. ArpScanner.java..."
+javac -d target/classes -cp "target/classes:$JARS" \
+      src/main/java/com/wifimanager/detector/ArpScanner.java
 
-echo "5. DhcpMonitor.java..."
-javac -d target/classes -cp "target/classes:$JARS" src/main/java/com/wifimanager/detector/DhcpMonitor.java
+echo "6. DhcpMonitor.java..."
+javac -d target/classes -cp "target/classes:$JARS" \
+      src/main/java/com/wifimanager/detector/DhcpMonitor.java
 
-echo "6. ClientDiscoveryService.java..."
-javac -d target/classes -cp "target/classes:$JARS" src/main/java/com/wifimanager/detector/ClientDiscoveryService.java
+echo "7. ClientDiscoveryService.java..."
+javac -d target/classes -cp "target/classes:$JARS" \
+      src/main/java/com/wifimanager/detector/ClientDiscoveryService.java
 
-echo "7. DetectorApiServer.java..."
-javac -d target/classes -cp "target/classes" src/main/java/com/wifimanager/detector/DetectorApiServer.java
+echo "8. DetectorApiServer.java..."
+javac -d target/classes -cp "target/classes" \
+      src/main/java/com/wifimanager/detector/DetectorApiServer.java
 
-echo "8. DetectorMain.java..."
-javac -d target/classes -cp "target/classes:$JARS" src/main/java/com/wifimanager/detector/DetectorMain.java
+echo "9. DetectorMain.java..."
+javac -d target/classes -cp "target/classes:$JARS" \
+      src/main/java/com/wifimanager/detector/DetectorMain.java
 
 # Vérifie
 if [ $? -eq 0 ]; then

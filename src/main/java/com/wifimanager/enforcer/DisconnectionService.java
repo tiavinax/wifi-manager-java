@@ -125,7 +125,7 @@ public class DisconnectionService {
             String ipAddress = getClientIp(macAddress);
             
             // Bloquer le trafic
-            trafficController.blockClient(macAddress, ipAddress);
+            trafficController.blockClient(macAddress, ipAddress, reason);
             
             // Désactiver le quota
             quotaManager.deactivateQuota(macAddress);

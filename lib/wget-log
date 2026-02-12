@@ -1,0 +1,11 @@
+--2026-02-12 12:00:30--  https://repo1.maven.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.15.3/jackson-datatype-jsr310-2.15.3.jar
+Résolution de repo1.maven.org (repo1.maven.org)… 104.18.19.12, 104.18.18.12, 2606:4700::6812:120c, ...
+Connexion à repo1.maven.org (repo1.maven.org)|104.18.19.12|:443… connecté.
+requête HTTP transmise, en attente de la réponse… 200 OK
+Taille : 122937 (120K) [application/java-archive]
+Enregistre : ‘jackson-datatype-jsr310-2.15.3.jar’
+
+jackson-datatype-jsr310-2.15.3.jar    72%[==================================================>                    ]  87,13K  51,0KB/s               jackson-datatype-jsr310-2.15.3.jar   100%[======================================================================>] 120,06K  66,2KB/s    ds 1,8s    
+
+2026-02-12 12:00:35 (66,2 KB/s) - ‘jackson-datatype-jsr310-2.15.3.jar’ enregistré [122937/122937]
+

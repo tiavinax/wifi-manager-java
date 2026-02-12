@@ -18,7 +18,7 @@ public class TestEnforcer {
         // Test TrafficController (simulation)
         System.out.println("\n2. Test TrafficController (simulation):");
         TrafficController controller = new TrafficController(true);
-        controller.blockClient("AA:BB:CC:DD:EE:FF", "192.168.0.100");
+        controller.blockClient("AA:BB:CC:DD:EE:FF", "192.168.0.100", "Quota depasser");
         controller.limitBandwidth("AA:BB:CC:DD:EE:FF", "192.168.0.100", 1024);
         
         // Test DisconnectionService

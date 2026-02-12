@@ -46,6 +46,11 @@ public class EnforcerApiServer {
         server.createContext("/stats", this::handleStats);
         server.createContext("/rules/show", this::handleShowRules);
         server.createContext("/rules/reset", this::handleResetRules);
+        // === Blocage client ===
+        server.createContext("/blocked", this::handleGetBlockedClients);
+        server.createContext("/blocked/", this::handleIsBlocked);
+        server.createContext("/unblock/", this::handleUnblock);
+        server.createContext("/blocked/clean", this::handleCleanBlocked);
 
         server.setExecutor(null);
         server.start();
@@ -262,14 +267,26 @@ public class EnforcerApiServer {
             return;
         }
 
+        // Récupérer l'IP depuis le quota manager ou via une autre méthode
+        String ipAddress = "192.168.43.71"; // À améliorer
+
         String reason = "MANUAL_DISCONNECT";
-        disconnectionService.disconnectClient(macAddress, reason);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Client déconnecté: " + macAddress);
+        // Utiliser le nouveau système de blocage
+        boolean blocked = trafficController.blockClient(macAddress, ipAddress, reason);
 
-        sendJsonResponse(exchange, 200, response);
+        if (blocked) {
+            disconnectionService.disconnectClient(macAddress, reason);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Client déconnecté et bloqué: " + macAddress);
+            response.put("mode", trafficController.isSimulationMode() ? "SIMULATION" : "RÉEL");
+
+            sendJsonResponse(exchange, 200, response);
+        } else {
+            sendError(exchange, 500, "Échec du blocage client");
+        }
     }
 
     private void handleReconnect(HttpExchange exchange) throws IOException {
@@ -368,6 +385,103 @@ public class EnforcerApiServer {
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes(StandardCharsets.UTF_8));
         }
+    }
+
+    // ========== NOUVEAUX ENDPOINTS POUR CLIENTS BLOQUÉS ==========
+
+    /**
+     * GET /blocked - Liste tous les clients bloqués
+     */
+    private void handleGetBlockedClients(HttpExchange exchange) throws IOException {
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            sendError(exchange, 405, "Méthode non autorisée");
+            return;
+        }
+
+        List<BlockedClient> blockedClients = trafficController.getBlockedClients();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("count", blockedClients.size());
+        response.put("blocked", blockedClients);
+
+        sendJsonResponse(exchange, 200, response);
+    }
+
+    /**
+     * GET /blocked/{mac} - Vérifier si un client est bloqué
+     */
+    private void handleIsBlocked(HttpExchange exchange) throws IOException {
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            sendError(exchange, 405, "Méthode non autorisée");
+            return;
+        }
+
+        String path = exchange.getRequestURI().getPath();
+        String macAddress = path.substring("/blocked/".length());
+
+        boolean isBlocked = trafficController.isClientBlocked(macAddress);
+        BlockedClient client = trafficController.getBlockedClientManager()
+                .getBlockedClient(macAddress);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("macAddress", macAddress);
+        response.put("isBlocked", isBlocked);
+        if (client != null) {
+            response.put("details", client);
+        }
+
+        sendJsonResponse(exchange, 200, response);
+    }
+
+    /**
+     * POST /unblock/{mac} - Débloquer un client
+     */
+    private void handleUnblock(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            sendError(exchange, 405, "Méthode non autorisée");
+            return;
+        }
+
+        String path = exchange.getRequestURI().getPath();
+        String macAddress = path.substring("/unblock/".length());
+
+        // Récupérer l'IP depuis le client bloqué
+        BlockedClient client = trafficController.getBlockedClientManager()
+                .getBlockedClient(macAddress);
+
+        if (client == null) {
+            sendError(exchange, 404, "Client non trouvé dans la liste des bloqués");
+            return;
+        }
+
+        boolean success = trafficController.unblockClient(
+                client.getMacAddress(),
+                client.getIpAddress());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", success);
+        response.put("message", success ? "Client débloqué" : "Échec déblocage");
+        response.put("macAddress", macAddress);
+
+        sendJsonResponse(exchange, 200, response);
+    }
+
+    /**
+     * POST /blocked/clean - Nettoyer les vieux blocages
+     */
+    private void handleCleanBlocked(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            sendError(exchange, 405, "Méthode non autorisée");
+            return;
+        }
+
+        trafficController.getBlockedClientManager().cleanExpiredBlockages(7);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Blocages expirés nettoyés");
+
+        sendJsonResponse(exchange, 200, response);
     }
 
     // ✅ AJOUTE CE HANDLER POUR OPTIONS

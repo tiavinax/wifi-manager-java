@@ -28,7 +28,11 @@ echo "5. EnforcerApiServer.java..."
 javac -d target/classes -cp "target/classes:$JARS" \
       src/main/java/com/wifimanager/enforcer/EnforcerApiServer.java
 
-echo "6. EnforcerMain.java..."
+echo "6. BlockedClientManager.java..."
+javac -d target/classes -cp "target/classes:$JARS" \
+      src/main/java/com/wifimanager/enforcer/BlockedClientManager.java
+
+echo "7. EnforcerMain.java..."
 javac -d target/classes -cp "target/classes:$JARS" \
       src/main/java/com/wifimanager/enforcer/EnforcerMain.java
 
