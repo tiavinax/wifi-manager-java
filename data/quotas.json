@@ -1,13 +1,2 @@
 [
-  {
-    "macAddress": "80:A5:89:D5:8C:89",
-    "timeLimitMinutes": 1,
-    "dataLimitMB": 50,
-    "lastUpdate": "2026-02-12T15:08:06.457580558",
-    "startTime": "2026-02-12T15:07:08.097706673",
-    "quotaId": "80:A5:89:D5:8C:89_1770898028097",
-    "isActive": false,
-    "timeUsedMinutes": 1,
-    "dataUsedMB": 0
-  }
 ]

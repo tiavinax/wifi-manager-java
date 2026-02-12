@@ -5,50 +5,441 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WiFi Manager - Dashboard</title>
+    <style>
+        /* CSS personnalisé - Thème Rouge & Blanc */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-    <!-- Bootstrap CSS -->
-    <link href="/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Dashboard CSS -->
-    <link href="/css/dashboard.css" rel="stylesheet">
+        body {
+            background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+            min-height: 100vh;
+        }
+
+        .dashboard-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Navbar horizontale */
+        .navbar {
+            background: #c62828;
+            background: linear-gradient(90deg, #b71c1c 0%, #c62828 50%, #d32f2f 100%);
+            padding: 0.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(198, 40, 40, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            backdrop-filter: blur(5px);
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo-text {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 1px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 0.5rem;
+            margin-left: 2rem;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1.2rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link i {
+            font-size: 1.2rem;
+        }
+
+        .nav-item.active .nav-link {
+            background: white;
+            color: #c62828;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .nav-badge {
+            background: #ff8a80;
+            color: #b71c1c;
+            padding: 0.2rem 0.6rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            color: white;
+        }
+
+        .user-avatar i {
+            font-size: 1.5rem;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .user-role {
+            font-size: 0.7rem;
+            opacity: 0.9;
+        }
+
+        .btn-refresh,
+        .notification-badge {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .btn-refresh:hover,
+        .notification-badge:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: rotate(15deg);
+        }
+
+        .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ffeb3b;
+            color: #b71c1c;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .date-time {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            background: #fef2f2;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title h1 {
+            color: #b71c1c;
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .breadcrumb {
+            display: flex;
+            list-style: none;
+            gap: 0.5rem;
+            color: #7f8c8d;
+        }
+
+        .breadcrumb-item a {
+            color: #c62828;
+            text-decoration: none;
+        }
+
+        .breadcrumb-item.active {
+            color: #e74c3c;
+            font-weight: 500;
+        }
+
+        /* Module Status */
+        .modules-status {
+            display: flex;
+            gap: 1.5rem;
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(198, 40, 40, 0.1);
+            margin: 0 2rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #2c3e50;
+        }
+
+        .status-badge {
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-offline {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        /* Hero Section - Projet Description */
+        .hero-section {
+            background: white;
+            border-radius: 30px;
+            padding: 3rem;
+            margin: 2rem 0;
+            box-shadow: 0 20px 40px rgba(198, 40, 40, 0.08);
+            border: 1px solid rgba(198, 40, 40, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, #b71c1c, #ff8a80, #b71c1c);
+        }
+
+        .project-badge {
+            background: #ffebee;
+            color: #b71c1c;
+            padding: 0.5rem 1.5rem;
+            border-radius: 40px;
+            display: inline-block;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+            border: 1px solid #ffcdd2;
+        }
+
+        .project-title {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #1a1a1a;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .project-title span {
+            color: #c62828;
+            background: linear-gradient(135deg, #c62828, #b71c1c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        .project-subtitle {
+            font-size: 1.5rem;
+            color: #c62828;
+            font-weight: 600;
+            margin-bottom: 2rem;
+        }
+
+        .description-card {
+            background: #fff5f5;
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border-left: 6px solid #c62828;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .feature-item {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 5px 15px rgba(198, 40, 40, 0.05);
+            border: 1px solid #ffcdd2;
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(198, 40, 40, 0.15);
+            border-color: #c62828;
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            color: #c62828;
+            margin-bottom: 1rem;
+        }
+
+        .feature-item h3 {
+            color: #b71c1c;
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .feature-item p {
+            color: #5d5d5d;
+            line-height: 1.5;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .tech-tag {
+            background: #ffebee;
+            color: #b71c1c;
+            padding: 0.6rem 1.5rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid #ef9a9a;
+        }
+
+        .notification-area {
+            margin-bottom: 1rem;
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .nav-divider {
+            display: none;
+        }
+
+        .sidebar-footer {
+            display: none;
+        }
+
+        .network-info {
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .navbar {
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            .navbar-left {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .nav-menu {
+                margin-left: 0;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 
 <body>
     <div class="dashboard-wrapper">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="logo-area">
-                <i class="bi bi-wifi logo-icon"></i>
-                <span class="logo-text">WiFi Manager</span>
-            </div>
+        <!-- Navbar Horizontale -->
+        <nav class="navbar">
+            <div class="navbar-left">
+                <div class="logo-area">
+                    <i class="bi bi-wifi logo-icon"></i>
+                    <span class="logo-text">WiFi Manager</span>
+                </div>
 
-            <div class="user-info">
-                <div class="user-avatar">
-                    <i class="bi bi-person-circle"></i>
-                </div>
-                <div class="user-details">
-                    <div class="user-name">Administrateur</div>
-                    <div class="user-role">Super Admin</div>
-                </div>
-            </div>
-
-            <div class="modules-status" id="modulesStatus">
-                <div class="status-item">
-                    <span>Module 1 - Détection</span>
-                    <span class="status-badge" id="module1Status">
-                        <i class="bi bi-question-circle"></i> Chargement...
-                    </span>
-                </div>
-                <div class="status-item">
-                    <span>Module 2 - Enforcer</span>
-                    <span class="status-badge" id="module2Status">
-                        <i class="bi bi-question-circle"></i> Chargement...
-                    </span>
-                </div>
-            </div>
-
-            <nav class="sidebar-nav">
                 <ul class="nav-menu">
                     <li class="nav-item" id="nav-dashboard">
                         <a class="nav-link" href="/">
@@ -70,7 +461,6 @@
                             <span class="nav-badge" id="quotasCount">0</span>
                         </a>
                     </li>
-
                     <li class="nav-item" id="nav-blocked">
                         <a class="nav-link" href="/blocked">
                             <i class="bi bi-shield-lock"></i>
@@ -78,9 +468,6 @@
                             <span class="nav-badge" id="blockedCount">0</span>
                         </a>
                     </li>
-
-                    <li class="nav-divider"></li>
-
                     <li class="nav-item" id="nav-stats">
                         <a class="nav-link" href="/stats">
                             <i class="bi bi-graph-up"></i>
@@ -88,37 +475,25 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-danger" href="#" onclick="return confirmLogout()">
+                        <a class="nav-link" href="#" onclick="return confirmLogout()">
                             <i class="bi bi-box-arrow-right"></i>
                             <span>Déconnexion</span>
                         </a>
                     </li>
                 </ul>
-            </nav>
+            </div>
 
-            <div class="sidebar-footer">
-                <div class="network-info">
-                    <i class="bi bi-hdd-network"></i>
-                    <div>
-                        <div style="font-size: 0.8rem; opacity: 0.7;">Interface réseau</div>
-                        <div style="font-weight: 600;" id="networkInterface">wlo1</div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="bi bi-person-circle"></i>
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">Administrateur</div>
+                        <div class="user-role">Super Admin</div>
                     </div>
                 </div>
-            </div>
-        </aside>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="top-bar">
-                <div class="page-title">
-                    <h1 id="pageTitle">Tableau de bord</h1>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="/">Accueil</a></li>
-                            <li class="breadcrumb-item active" id="breadcrumbCurrent">Dashboard</li>
-                        </ol>
-                    </nav>
-                </div>
                 <div class="d-flex align-items-center gap-3">
                     <button class="btn-refresh" onclick="window.location.reload()">
                         <i class="bi bi-arrow-clockwise"></i>
@@ -133,13 +508,110 @@
                     </div>
                 </div>
             </div>
+        </nav>
+
+        <!-- Module Status Bar -->
+        <div class="modules-status" id="modulesStatus">
+            <div class="status-item">
+                <span>Module 1 - Détection</span>
+                <span class="status-badge" id="module1Status">
+                    <i class="bi bi-question-circle"></i> Chargement...
+                </span>
+            </div>
+            <div class="status-item">
+                <span>Module 2 - Enforcer</span>
+                <span class="status-badge" id="module2Status">
+                    <i class="bi bi-question-circle"></i> Chargement...
+                </span>
+            </div>
+            <div class="status-item">
+                <span>Interface réseau</span>
+                <span class="status-badge status-online" id="networkInterface">
+                    <i class="bi bi-hdd-network"></i> wlo1
+                </span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div class="page-title">
+                    <h1 id="pageTitle">Tableau de bord</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+                            <li class="breadcrumb-item active" id="breadcrumbCurrent">Dashboard</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
 
             <!-- Notification Area -->
             <div id="notificationArea" class="notification-area" style="display: none;"></div>
 
             <!-- Page Content -->
             <div id="pageContent">
-                <!-- Le contenu sera injecté ici -->
+                <!-- Hero Section - Présentation du projet -->
+                <div class="hero-section">
+                    <div class="project-badge">
+                        WiFi Manager for Businesses
+                    </div>
+
+                    <h1 class="project-title">
+                        <span>wifi-manager-java</span>
+                    </h1>
+
+                    <div class="project-subtitle">
+                        Gestionnaire WiFi intelligent pour restaurants et cybercafés
+                    </div>
+
+                    <div class="description-card">
+                        <p style="font-size: 1.2rem; color: #2c3e50; margin-bottom: 1rem; font-weight: 500;">
+                            Projet Réseau - Application de gestion WiFi professionnelle
+                        </p>
+                        <p style="color: #5d5d5d; line-height: 1.8; font-size: 1.1rem;">
+                            Solution complète de gestion WiFi pour restaurants, cybercafés et hôtels avec :
+                        </p>
+                    </div>
+
+                    <div class="feature-grid">
+                        <div class="feature-item">
+                            <div class="feature-icon">⏱️</div>
+                            <h3>Limitation temps/connexion</h3>
+                            <p>Contrôle précis de la durée de connexion par utilisateur et session</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📊</div>
+                            <h3>Quotas de données</h3>
+                            <p>Gestion des volumes de données avec alertes et blocage automatique</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🔍</div>
+                            <h3>Détection type trafic</h3>
+                            <p>Identification intelligente des flux YouTube, Netflix, réseaux sociaux</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📈</div>
+                            <h3>Dashboard d'administration</h3>
+                            <p>Interface temps réel, statistiques et contrôle centralisé</p>
+                        </div>
+                    </div>
+
+                    <div class="tech-stack">
+                        <span class="tech-tag">☕ Java EE</span>
+                        <span class="tech-tag">🌐 Réseau</span>
+                        <span class="tech-tag">📡 WiFi Management</span>
+                        <span class="tech-tag">🛡️ DPI/Deep Packet Inspection</span>
+                        <span class="tech-tag">⚡ QoS</span>
+                        <span class="tech-tag">📱 Responsive</span>
+                    </div>
+
+                    <div
+                        style="margin-top: 2.5rem; padding-top: 1.5rem; border-top: 2px dashed #ffcdd2; text-align: center; color: #b71c1c;">
+                        <i class="bi bi-router" style="font-size: 1.5rem; margin-right: 0.5rem;"></i>
+                        <span style="font-weight: 600;">Déployé sur routeur - Solution légère et performante</span>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
