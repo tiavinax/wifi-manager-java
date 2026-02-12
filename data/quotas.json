@@ -1,13 +1,46 @@
 [
   {
-    "macAddress": "D8:42:F7:2A:20:4F",
-    "timeLimitMinutes": 1,
-    "dataLimitMB": 5,
-    "lastUpdate": "2026-02-11T23:41:59.192882091",
-    "startTime": "2026-02-11T23:41:39.162980170",
-    "quotaId": "D8:42:F7:2A:20:4F_1770842499163",
+    "macAddress": "CE:2E:89:4D:A2:00",
+    "timeLimitMinutes": 2,
+    "dataLimitMB": 50,
+    "lastUpdate": "2026-02-12T11:14:13.106741865",
+    "startTime": "2026-02-12T11:12:24.787263762",
+    "quotaId": "CE:2E:89:4D:A2:00_1770883944787",
     "isActive": false,
-    "timeUsedMinutes": 1,
+    "timeUsedMinutes": 2,
+    "dataUsedMB": 0
+  },
+  {
+    "macAddress": "30:A1:FA:D5:5A:A8",
+    "timeLimitMinutes": 2,
+    "dataLimitMB": 50,
+    "lastUpdate": "2026-02-12T11:14:13.106780307",
+    "startTime": "2026-02-12T11:12:24.797043978",
+    "quotaId": "30:A1:FA:D5:5A:A8_1770883944797",
+    "isActive": false,
+    "timeUsedMinutes": 2,
+    "dataUsedMB": 0
+  },
+  {
+    "macAddress": "A4:B1:C1:13:A8:49",
+    "timeLimitMinutes": 2,
+    "dataLimitMB": 50,
+    "lastUpdate": "2026-02-12T11:14:13.106791474",
+    "startTime": "2026-02-12T11:12:24.846451116",
+    "quotaId": "A4:B1:C1:13:A8:49_1770883944846",
+    "isActive": false,
+    "timeUsedMinutes": 2,
+    "dataUsedMB": 0
+  },
+  {
+    "macAddress": "80:A5:89:D5:8C:89",
+    "timeLimitMinutes": 2,
+    "dataLimitMB": 50,
+    "lastUpdate": "2026-02-12T11:14:13.106808223",
+    "startTime": "2026-02-12T11:12:24.896779381",
+    "quotaId": "80:A5:89:D5:8C:89_1770883944896",
+    "isActive": false,
+    "timeUsedMinutes": 2,
     "dataUsedMB": 0
   }
 ]
