@@ -119,60 +119,115 @@ public class TrafficController {
         return self;
     }
     
-    /**
-     * Bloque complètement un client
-     */
-    public boolean blockClient(String macAddress, String ipAddress, String reason) {
-        macAddress = macAddress.toUpperCase();
+   /**
+ * Bloque complètement un client
+ */
+public boolean blockClient(String macAddress, String ipAddress, String reason) {
+    macAddress = macAddress.toUpperCase();
+    
+    // 🛡️ PROTECTION: Ne pas se bloquer soi-même
+    if (isSelf(macAddress)) {
+        logger.error("🚫 TENTATIVE DE BLOCAGE DE SOI-MÊME - INTERDIT !");
+        return false;
+    }
+    
+    if (simulationMode) {
+        logger.info("[SIMULATION] Blocage client {} ({}) - {}", macAddress, ipAddress, reason);
+        blockedClientManager.blockClient(macAddress, ipAddress, reason);
+        return true;
+    }
+    
+    // ========== MODE RÉEL ==========
+    try {
+        logger.info("🔨 BLOCAGE RÉEL: {} ({}) - {}", macAddress, ipAddress, reason);
         
-        // 🛡️ PROTECTION: Ne pas se bloquer soi-même
-        if (isSelf(macAddress)) {
-            return false;
-        }
-        
-        if (simulationMode) {
-            logger.info("[SIMULATION] Blocage client {} ({}) - {}", 
-                macAddress, ipAddress, reason);
-            logger.info("  Commande: sudo iptables -A FORWARD -m mac --mac-source {} -j DROP", 
-                macAddress);
+        // ✅ VÉRIFIER SI DÉJÀ BLOQUÉ
+        if (isClientBlocked(macAddress)) {
+            logger.info("Client déjà bloqué: {}", macAddress);
             return true;
         }
         
-        // ========== MODE RÉEL ==========
-        try {
-            logger.info("🔨 BLOCAGE RÉEL: {} ({}) - {}", macAddress, ipAddress, reason);
-            
-            // 1. Bloquer par adresse MAC
-            boolean macBlocked = executeCommandWithCheck(
+        // 1. Bloquer par adresse MAC
+        boolean macBlocked = executeCommandWithCheck(
+            "sudo", "iptables", "-C", "FORWARD",  // Vérifier d'abord si la règle existe
+            "-m", "mac", "--mac-source", macAddress, "-j", "DROP"
+        );
+        
+        if (!macBlocked) {
+            // La règle n'existe pas, on l'ajoute
+            macBlocked = executeCommandWithCheck(
                 "sudo", "iptables", "-A", "FORWARD", 
                 "-m", "mac", "--mac-source", macAddress, "-j", "DROP"
             );
-            
-            // 2. Bloquer par IP (au cas où)
-            boolean ipBlocked = executeCommandWithCheck(
+        }
+        
+        // 2. Bloquer par IP (au cas où)
+        boolean ipBlocked = executeCommandWithCheck(
+            "sudo", "iptables", "-C", "FORWARD",
+            "-s", ipAddress, "-j", "DROP"
+        );
+        
+        if (!ipBlocked) {
+            ipBlocked = executeCommandWithCheck(
                 "sudo", "iptables", "-A", "FORWARD", 
                 "-s", ipAddress, "-j", "DROP"
             );
+        }
+        
+        // ✅ SEULEMENT SI AU MOINS UNE RÈGLE EST AJOUTÉE
+        if (macBlocked || ipBlocked) {
+            // Ajouter à la liste des bloqués
+            blockedClientManager.blockClient(macAddress, ipAddress, reason);
+            logger.info("✅ Client BLOQUÉ: {} ({})", macAddress, ipAddress);
             
-            if (macBlocked || ipBlocked) {
-                // Ajouter à la liste des bloqués
-                blockedClientManager.blockClient(macAddress, ipAddress, reason);
-                
-                logger.info("✅ Client BLOQUÉ: {} ({})", macAddress, ipAddress);
-                
-                // Vérification
-                verifyBlock(macAddress);
-                return true;
-            } else {
-                logger.error("❌ Échec blocage: {} ({})", macAddress, ipAddress);
-                return false;
-            }
-            
-        } catch (Exception e) {
-            logger.error("❌ Erreur blocage {}: {}", macAddress, e.getMessage(), e);
+            // Vérification
+            verifyBlock(macAddress);
+            return true;
+        } else {
+            logger.error("❌ Échec blocage: {} ({}) - Aucune règle ajoutée", macAddress, ipAddress);
             return false;
         }
+        
+    } catch (Exception e) {
+        logger.error("❌ Erreur blocage {}: {}", macAddress, e.getMessage(), e);
+        return false;
     }
+}
+
+/**
+ * Exécute une commande et vérifie le code de retour
+ */
+private boolean executeCommandWithCheck(String... command) throws Exception {
+    logger.debug("⚡ Exécution: {}", String.join(" ", command));
+    
+    ProcessBuilder pb = new ProcessBuilder(command);
+    pb.redirectErrorStream(true);
+    Process process = pb.start();
+    
+    // Lire la sortie en temps réel
+    try (BufferedReader reader = new BufferedReader(
+            new InputStreamReader(process.getInputStream()))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+            logger.debug("   {}", line);
+        }
+    }
+    
+    int exitCode = process.waitFor();
+    
+    if (exitCode == 0) {
+        logger.debug("   ✅ Succès (code: {})", exitCode);
+        return true;
+    } else {
+        // Pour -C (vérifier), 1 = règle non trouvée, ce n'est pas une erreur
+        if (command.length > 1 && command[1].equals("-C")) {
+            logger.debug("   ℹ️ Règle non trouvée (code: {})", exitCode);
+            return false;
+        }
+        logger.error("   ❌ Échec (code: {})", exitCode);
+        return false;
+    }
+}
     
     /**
      * Débloque un client
@@ -248,32 +303,32 @@ public class TrafficController {
     /**
      * Exécute une commande et vérifie le code de retour
      */
-    private boolean executeCommandWithCheck(String... command) throws Exception {
-        logger.debug("⚡ Exécution: {}", String.join(" ", command));
+    // private boolean executeCommandWithCheck(String... command) throws Exception {
+    //     logger.debug("⚡ Exécution: {}", String.join(" ", command));
         
-        ProcessBuilder pb = new ProcessBuilder(command);
-        pb.redirectErrorStream(true);
-        Process process = pb.start();
+    //     ProcessBuilder pb = new ProcessBuilder(command);
+    //     pb.redirectErrorStream(true);
+    //     Process process = pb.start();
         
-        // Lire la sortie en temps réel
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                logger.debug("   {}", line);
-            }
-        }
+    //     // Lire la sortie en temps réel
+    //     try (BufferedReader reader = new BufferedReader(
+    //             new InputStreamReader(process.getInputStream()))) {
+    //         String line;
+    //         while ((line = reader.readLine()) != null) {
+    //             logger.debug("   {}", line);
+    //         }
+    //     }
         
-        int exitCode = process.waitFor();
+    //     int exitCode = process.waitFor();
         
-        if (exitCode == 0) {
-            logger.debug("   ✅ Succès (code: {})", exitCode);
-            return true;
-        } else {
-            logger.error("   ❌ Échec (code: {})", exitCode);
-            return false;
-        }
-    }
+    //     if (exitCode == 0) {
+    //         logger.debug("   ✅ Succès (code: {})", exitCode);
+    //         return true;
+    //     } else {
+    //         logger.error("   ❌ Échec (code: {})", exitCode);
+    //         return false;
+    //     }
+    // }
     
     /**
      * Vérifier si un client est bloqué

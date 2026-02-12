@@ -167,32 +167,6 @@ function parseQuotaString(quotaStr) {
     }
 }
 
-// function loadAllQuotas() {
-//     // ✅ UTILISE LE PROXY - GET /quota/ (sans MAC = tous les quotas)
-//     fetch('/api/enforcer/quota/')
-//         .then(response => {
-//             if (!response.ok) throw new Error('Module 2 hors ligne');
-//             return response.text();
-//         })
-//         .then(text => {
-//             try {
-//                 const data = JSON.parse(text);
-//                 // La réponse est { "count": X, "quotas": [...] }
-//                 quotasData = data.quotas || [];
-//                 console.log('✅ Quotas chargés:', quotasData.length);
-//                 updateQuotasBadge();
-//                 updateClientsTable(); // Mettre à jour l'affichage des quotas
-//             } catch (e) {
-//                 console.error('Erreur parsing quotas:', e);
-//                 quotasData = [];
-//             }
-//         })
-//         .catch(error => {
-//             console.error('Erreur chargement quotas:', error);
-//             quotasData = [];
-//         });
-// }
-
 function loadQuotaForClient(mac) {
     // ✅ UTILISE LE PROXY - GET /quota/{mac}
     return fetch('/api/enforcer/quota/' + mac)
@@ -409,29 +383,6 @@ function getQuotaHtml(quota) {
         <small class="text-muted">${quota.dataUsedMB || 0}/${quota.dataLimitMB || 0} Mo</small>
     `;
 }
-// function getQuotaHtml(quota) {
-//     if (!quota) {
-//         return '<span class="badge bg-secondary">Aucun quota</span>';
-//     }
-
-//     const timeRemaining = quota.timeRemainingMinutes || 0;
-//     const dataRemaining = quota.dataRemainingMB || 0;
-//     const isExceeded = quota.isExceeded || false;
-
-//     if (isExceeded) {
-//         return '<span class="badge bg-danger">Quota dépassé</span>';
-//     }
-
-//     return `
-//         <span class="badge bg-info">
-//             ${timeRemaining} min / ${dataRemaining} Mo
-//         </span>
-//         <br>
-//         <small class="text-muted">${quota.timeUsedMinutes || 0}/${quota.timeLimitMinutes || 0} min</small>
-//         <br>
-//         <small class="text-muted">${quota.dataUsedMB || 0}/${quota.dataLimitMB || 0} Mo</small>
-//     `;
-// }
 
 function updateClientsStats() {
     const total = clientsData.length;

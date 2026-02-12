@@ -224,80 +224,80 @@ public class ArpScanner {
         return "inconnue";
     }
 
-    private Map<String, String> scanWithIpNeigh() {
-        Map<String, String> result = new HashMap<>();
-        try {
-            // AVEC ta config sudoers, tu peux utiliser 'ip' sans sudo
-            String[] cmd = { "ip", "neigh", "show", "dev", networkInterface };
-            logger.debug("Exécution: {}", String.join(" ", cmd));
+    // private Map<String, String> scanWithIpNeigh() {
+    //     Map<String, String> result = new HashMap<>();
+    //     try {
+    //         // AVEC ta config sudoers, tu peux utiliser 'ip' sans sudo
+    //         String[] cmd = { "ip", "neigh", "show", "dev", networkInterface };
+    //         logger.debug("Exécution: {}", String.join(" ", cmd));
 
-            Process p = Runtime.getRuntime().exec(cmd);
+    //         Process p = Runtime.getRuntime().exec(cmd);
 
-            // Lire le résultat
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(p.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    logger.debug("Ligne ip neigh: {}", line);
+    //         // Lire le résultat
+    //         try (BufferedReader reader = new BufferedReader(
+    //                 new InputStreamReader(p.getInputStream()))) {
+    //             String line;
+    //             while ((line = reader.readLine()) != null) {
+    //                 logger.debug("Ligne ip neigh: {}", line);
 
-                    // Plusieurs formats possibles:
-                    // 1. 192.168.0.1 dev wlo1 lladdr d8:42:f7:2a:20:4f REACHABLE
-                    // 2. 192.168.0.1 lladdr d8:42:f7:2a:20:4f REACHABLE
+    //                 // Plusieurs formats possibles:
+    //                 // 1. 192.168.0.1 dev wlo1 lladdr d8:42:f7:2a:20:4f REACHABLE
+    //                 // 2. 192.168.0.1 lladdr d8:42:f7:2a:20:4f REACHABLE
 
-                    String[] parts = line.trim().split("\\s+");
-                    String ip = null;
-                    String mac = null;
+    //                 String[] parts = line.trim().split("\\s+");
+    //                 String ip = null;
+    //                 String mac = null;
 
-                    // Chercher l'IP (premier token qui ressemble à une IPv4)
-                    for (String part : parts) {
-                        if (isValidIpAddress(part)) {
-                            ip = part;
-                            break;
-                        }
-                    }
+    //                 // Chercher l'IP (premier token qui ressemble à une IPv4)
+    //                 for (String part : parts) {
+    //                     if (isValidIpAddress(part)) {
+    //                         ip = part;
+    //                         break;
+    //                     }
+    //                 }
 
-                    // Chercher le MAC (token avec : ou -)
-                    for (String part : parts) {
-                        if (isValidMacAddress(part)) {
-                            mac = part;
-                            break;
-                        }
-                    }
+    //                 // Chercher le MAC (token avec : ou -)
+    //                 for (String part : parts) {
+    //                     if (isValidMacAddress(part)) {
+    //                         mac = part;
+    //                         break;
+    //                     }
+    //                 }
 
-                    if (ip != null && mac != null) {
-                        mac = mac.replaceAll("[()]", "").toUpperCase();
-                        result.put(mac, ip);
-                        logger.info("✅ Client trouvé: {} → {}", mac, ip);
-                    }
-                }
-            }
+    //                 if (ip != null && mac != null) {
+    //                     mac = mac.replaceAll("[()]", "").toUpperCase();
+    //                     result.put(mac, ip);
+    //                     logger.info("✅ Client trouvé: {} → {}", mac, ip);
+    //                 }
+    //             }
+    //         }
 
-            // Vérifier les erreurs
-            try (BufferedReader errorReader = new BufferedReader(
-                    new InputStreamReader(p.getErrorStream()))) {
-                String errorLine;
-                boolean hasError = false;
-                while ((errorLine = errorReader.readLine()) != null) {
-                    logger.error("Erreur ip neigh: {}", errorLine);
-                    hasError = true;
-                }
-                if (hasError) {
-                    logger.warn("Problème avec 'ip neigh'. Vérifiez les droits.");
-                }
-            }
+    //         // Vérifier les erreurs
+    //         try (BufferedReader errorReader = new BufferedReader(
+    //                 new InputStreamReader(p.getErrorStream()))) {
+    //             String errorLine;
+    //             boolean hasError = false;
+    //             while ((errorLine = errorReader.readLine()) != null) {
+    //                 logger.error("Erreur ip neigh: {}", errorLine);
+    //                 hasError = true;
+    //             }
+    //             if (hasError) {
+    //                 logger.warn("Problème avec 'ip neigh'. Vérifiez les droits.");
+    //             }
+    //         }
 
-            int exitCode = p.waitFor();
-            if (exitCode != 0) {
-                logger.warn("Commande 'ip neigh' a échoué avec code: {}", exitCode);
-            }
+    //         int exitCode = p.waitFor();
+    //         if (exitCode != 0) {
+    //             logger.warn("Commande 'ip neigh' a échoué avec code: {}", exitCode);
+    //         }
 
-        } catch (Exception e) {
-            logger.error("Exception dans scanWithIpNeigh: {}", e.getMessage(), e);
-        }
+    //     } catch (Exception e) {
+    //         logger.error("Exception dans scanWithIpNeigh: {}", e.getMessage(), e);
+    //     }
 
-        logger.debug("scanWithIpNeigh trouvé {} clients", result.size());
-        return result;
-    }
+    //     logger.debug("scanWithIpNeigh trouvé {} clients", result.size());
+    //     return result;
+    // }
 
     /**
      * Détecte le type d'appareil par son adresse MAC
@@ -368,66 +368,66 @@ public class ArpScanner {
     /**
      * Scan avec arp-scan (nécessite sudo mais c'est LE PLUS FIABLE)
      */
-    private Map<String, String> scanWithArpScan() {
-        Map<String, String> result = new HashMap<>();
+    // private Map<String, String> scanWithArpScan() {
+    //     Map<String, String> result = new HashMap<>();
 
-        try {
-            // Vérifier si arp-scan est installé
-            Process check = Runtime.getRuntime().exec("which arp-scan");
-            if (check.waitFor() != 0) {
-                logger.warn("⚠️ arp-scan n'est pas installé. Installez-le avec: sudo apt-get install arp-scan");
-                return result;
-            }
+    //     try {
+    //         // Vérifier si arp-scan est installé
+    //         Process check = Runtime.getRuntime().exec("which arp-scan");
+    //         if (check.waitFor() != 0) {
+    //             logger.warn("⚠️ arp-scan n'est pas installé. Installez-le avec: sudo apt-get install arp-scan");
+    //             return result;
+    //         }
 
-            // ✅ AVEC sudo - fonctionne grâce à ta configuration sudoers
-            String[] cmd = { "sudo", "arp-scan", "--interface=" + networkInterface,
-                    "--localnet", "--quiet" };
+    //         // ✅ AVEC sudo - fonctionne grâce à ta configuration sudoers
+    //         String[] cmd = { "sudo", "arp-scan", "--interface=" + networkInterface,
+    //                 "--localnet", "--quiet" };
 
-            logger.debug("Exécution: {}", String.join(" ", cmd));
-            Process p = Runtime.getRuntime().exec(cmd);
+    //         logger.debug("Exécution: {}", String.join(" ", cmd));
+    //         Process p = Runtime.getRuntime().exec(cmd);
 
-            // Lire la sortie
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(p.getInputStream()))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Format: 192.168.43.71 80:a5:89:d5:8c:89 (Unknown)
-                    String[] parts = line.trim().split("\\s+");
-                    if (parts.length >= 2) {
-                        String ip = parts[0];
-                        String mac = parts[1];
+    //         // Lire la sortie
+    //         try (BufferedReader reader = new BufferedReader(
+    //                 new InputStreamReader(p.getInputStream()))) {
+    //             String line;
+    //             while ((line = reader.readLine()) != null) {
+    //                 // Format: 192.168.43.71 80:a5:89:d5:8c:89 (Unknown)
+    //                 String[] parts = line.trim().split("\\s+");
+    //                 if (parts.length >= 2) {
+    //                     String ip = parts[0];
+    //                     String mac = parts[1];
 
-                        // Ignorer les lignes de statistiques
-                        if (isValidIpAddress(ip) && isValidMacAddress(mac)) {
-                            result.put(mac.toUpperCase(), ip);
-                            logger.debug("   ✅ arp-scan: {} → {}", mac, ip);
-                        }
-                    }
-                }
-            }
+    //                     // Ignorer les lignes de statistiques
+    //                     if (isValidIpAddress(ip) && isValidMacAddress(mac)) {
+    //                         result.put(mac.toUpperCase(), ip);
+    //                         logger.debug("   ✅ arp-scan: {} → {}", mac, ip);
+    //                     }
+    //                 }
+    //             }
+    //         }
 
-            // Lire les erreurs éventuelles
-            try (BufferedReader errorReader = new BufferedReader(
-                    new InputStreamReader(p.getErrorStream()))) {
-                String errorLine;
-                while ((errorLine = errorReader.readLine()) != null) {
-                    if (errorLine.contains("Permission denied")) {
-                        logger.error("❌ Permission denied! Vérifie la config sudoers");
-                    } else {
-                        logger.warn("⚠️ arp-scan: {}", errorLine);
-                    }
-                }
-            }
+    //         // Lire les erreurs éventuelles
+    //         try (BufferedReader errorReader = new BufferedReader(
+    //                 new InputStreamReader(p.getErrorStream()))) {
+    //             String errorLine;
+    //             while ((errorLine = errorReader.readLine()) != null) {
+    //                 if (errorLine.contains("Permission denied")) {
+    //                     logger.error("❌ Permission denied! Vérifie la config sudoers");
+    //                 } else {
+    //                     logger.warn("⚠️ arp-scan: {}", errorLine);
+    //                 }
+    //             }
+    //         }
 
-            p.waitFor();
-            logger.info("   ✅ arp-scan terminé: {} clients trouvés", result.size());
+    //         p.waitFor();
+    //         logger.info("   ✅ arp-scan terminé: {} clients trouvés", result.size());
 
-        } catch (Exception e) {
-            logger.error("❌ Erreur arp-scan: {}", e.getMessage());
-        }
+    //     } catch (Exception e) {
+    //         logger.error("❌ Erreur arp-scan: {}", e.getMessage());
+    //     }
 
-        return result;
-    }
+    //     return result;
+    // }
 
     
     // public Map<String, String> scan() {
